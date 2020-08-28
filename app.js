@@ -5,6 +5,10 @@ const userVisitor = require("./Schema").userVisitor;
 const userPremiseOwner = require("./Schema").userPremiseOwner;
 const premiseQRCode = require("./Schema").premiseQRCode;
 const checkInRecord = require("./Schema").checkInRecord;
+const visitorDependent = require("./Schema").visitorDependent;
+const savedCasualContactsGroup = require("./Schema").savedCasualContactsGroup;
+const savedConfirmedCaseCheckIn = require("./Schema").savedConfirmedCaseCheckIn;
+const savedCasualContactCheckIn = require("./Schema").savedCasualContactCheckIn;
 // const bcrypt = require("bcryptjs");
 // const jwt = require("jsonwebtoken");
 var path = require("path");
@@ -199,6 +203,20 @@ app.post("/register", async (req, res) => {
 });
 
 app.post("/testing", async (req, res) => {
+	var now = new Date();
+	const user = new visitorDependent({
+		ic_num: "432131-02-1234",
+		ic_fname: "Judy Ban",
+		relationship: "Grandparent",
+		user_visitor: "5f3ce1e22beafc1ea0501bc9",
+		date_created: new Date(now.getTime() + 480 * 60000),
+	});
+	try {
+		const savedUser = await user.save();
+		res.send({ user: user._id });
+	} catch (error) {
+		res.status(400).json(error);
+	}
 	// check if email exist
 	// const user = await userVisitor.findOne({ phone_no: req.query.phone_no });
 	// if (!user) {
@@ -213,38 +231,161 @@ app.post("/testing", async (req, res) => {
 	// }
 	// res.send(check_in_records);
 
-	const visitor = await userVisitor.findOne({ ic_num: req.body.visitor_id });
+	// const visitor = await userVisitor.findOne({ ic_num: req.body.visitor_id });
+	// if (!visitor) {
+	// 	return res.send(false);
+	// } else {
+	// 	var visitor_id = visitor._id;
+	// 	const check_in_records = await checkInRecord.find({
+	// 		$and: [
+	// 			{ user_visitor: visitor_id },
+	// 			{ date_created: { $gte: new Date(req.body.date_from) } },
+	// 		],
+	// 	});
+	// 	if (!check_in_records) {
+	// 		return res.send(false);
+	// 	} else {
+	// 		const check_in_contacts_records = await checkInRecord.find({
+	// 			$and: [
+	// 				{ user_visitor: { $ne: visitor_id } },
+	// 				{ user_premiseowner: check_in_records[0].user_premiseowner },
+	// 				{
+	// 					date_created: {
+	// 						$gte: new Date(req.body.date_from),
+	// 						$lte: new Date("2020-08-24T14:11:36.038+00:00"),
+	// 					},
+	// 				},
+	// 			],
+	// 		});
+	// 		res.send(check_in_contacts_records);
+	// 	}
+	// }
+});
+
+app.post("/savedCasualContactsGroup", async (req, res) => {
+	console.log(req.body.confirmed_case_id);
+	console.log(req.body.confirmed_case_user_type);
+	console.log(req.body.check_in_day_range);
+	console.log(req.body.check_in_time_range_before);
+	console.log(req.body.check_in_time_range_after);
+	console.log(req.body.checked_in_premise);
+	console.log(req.body.casual_contacts_visitors);
+	var now = new Date();
+	var savedGroup;
+	if (req.body.confirmed_case_user_type == "Visitor") {
+		savedGroup = new savedCasualContactsGroup({
+			confirmed_case_visitor: req.body.confirmed_case_id,
+			day_range_check_in: req.body.check_in_day_range,
+			time_range_check_in_before: req.body.check_in_time_range_before,
+			time_range_check_in_after: req.body.check_in_time_range_after,
+			completed: false,
+			date_created: new Date(now.getTime() + 480 * 60000),
+		});
+	} else if (req.body.confirmed_case_user_type == "Dependent") {
+		savedGroup = new savedCasualContactsGroup({
+			confirmed_case_dependent: req.body.confirmed_case_id,
+			day_range_check_in: req.body.check_in_day_range,
+			time_range_check_in_before: req.body.check_in_time_range_before,
+			time_range_check_in_after: req.body.check_in_time_range_after,
+			completed: false,
+			date_created: new Date(now.getTime() + 480 * 60000),
+		});
+	}
+	try {
+		var saved_group = await savedGroup.save();
+		req.body.checked_in_premise.forEach(async function (item) {
+			// console.log(item._id);
+			savedCheckIn = new savedConfirmedCaseCheckIn({
+				saved_casual_contacts_group: saved_group._id,
+				check_in_record: item._id,
+				completed: false,
+				date_created: new Date(now.getTime() + 480 * 60000),
+			});
+			await savedCheckIn.save();
+		});
+
+		req.body.casual_contacts_visitors.forEach(async function (item) {
+			console.log(item._id);
+			saved_casual_contact_check_in = new savedCasualContactCheckIn({
+				saved_casual_contacts_group: saved_group._id,
+				saved_confirmed_case_check_in: item.check_in_record_id,
+				check_in_record: item._id,
+				completed: false,
+				date_created: new Date(now.getTime() + 480 * 60000),
+			});
+			await saved_casual_contact_check_in.save();
+		});
+
+		return res.send(true);
+	} catch (error) {
+		res.status(400).json(error);
+	}
+
+	// return res.send(true);
+});
+
+app.post("/search_confirmed_case_info_visitor", async (req, res) => {
+	const visitor = await userVisitor.findOne({ ic_num: req.body.ic_number });
 	if (!visitor) {
+		// const dependent = await visitorDependent.findOne({
+		// 	ic_num: req.body.ic_number,
+		// });
+		// if (!dependent) {
+		// 	return res.send(false);
+		// } else {
+		// 	return res.send(dependent);
+		// }
 		return res.send(false);
 	} else {
-		var visitor_id = visitor._id;
-		const check_in_records = await checkInRecord.find({
-			$and: [
-				{ user_visitor: visitor_id },
-				{ date_created: { $gte: new Date(req.body.date_from) } },
-			],
-		});
-		if (!check_in_records) {
-			return res.send(false);
-		} else {
-			const check_in_contacts_records = await checkInRecord.find({
-				$and: [
-					{ user_visitor: { $ne: visitor_id } },
-					{ user_premiseowner: check_in_records[0].user_premiseowner },
-					{
-						date_created: {
-							$gte: new Date(req.body.date_from),
-							$lte: new Date("2020-08-24T14:11:36.038+00:00"),
-						},
-					},
-				],
-			});
-			res.send(check_in_contacts_records);
-		}
+		return res.send(visitor);
 	}
 });
 
-app.post("/search_casual_contacts", async (req, res) => {
+app.post("/search_confirmed_case_info_dependent", async (req, res) => {
+	const dependent = await visitorDependent.findOne({
+		ic_num: req.body.ic_number,
+	});
+	if (!dependent) {
+		return res.send(false);
+	} else {
+		return res.send(dependent);
+	}
+});
+
+app.post("/search_check_in_records_dependent", async (req, res) => {
+	const confirmed_dependent = await visitorDependent.findOne({
+		ic_num: req.body.ic_number,
+	});
+	if (!confirmed_dependent) {
+		return res.send(false);
+	} else {
+		var confirmed_dependent_id = confirmed_dependent._id;
+		const check_in_records = await checkInRecord
+			.find({
+				$and: [
+					{
+						// $and: [
+						// { user_visitor: confirmed_dependent_id },
+						// { visitor_dependent: { $exists: false } },
+						visitor_dependent: confirmed_dependent_id,
+						// { visitor_dependent: confirmed_visitor_id  },
+						// ],
+					},
+					// { user_visitor: confirmed_visitor_id },
+					{ date_created: { $gte: new Date(req.body.date_from) } },
+				],
+			})
+			.populate("user_premiseowner")
+			.exec();
+
+		if (!check_in_records) {
+			return res.send(false);
+		}
+		res.send(check_in_records);
+	}
+});
+
+app.post("/search_check_in_records_visitor", async (req, res) => {
 	const confirmed_visitor = await userVisitor.findOne({
 		ic_num: req.body.ic_number,
 	});
@@ -252,12 +393,23 @@ app.post("/search_casual_contacts", async (req, res) => {
 		return res.send(false);
 	} else {
 		var confirmed_visitor_id = confirmed_visitor._id;
-		const check_in_records = await checkInRecord.find({
-			$and: [
-				{ user_visitor: confirmed_visitor_id },
-				{ date_created: { $gte: new Date(req.body.date_from) } },
-			],
-		});
+		const check_in_records = await checkInRecord
+			.find({
+				$and: [
+					{
+						$and: [
+							{ user_visitor: confirmed_visitor_id },
+							{ visitor_dependent: { $exists: false } },
+							// { visitor_dependent: confirmed_visitor_id  },
+						],
+					},
+					// { user_visitor: confirmed_visitor_id },
+					{ date_created: { $gte: new Date(req.body.date_from) } },
+				],
+			})
+			.populate("user_premiseowner")
+			.exec();
+
 		if (!check_in_records) {
 			return res.send(false);
 		}
@@ -282,7 +434,7 @@ app.post("/search_casual_contacts", async (req, res) => {
 	}
 });
 
-app.post("/search_casual_contacts_1", async (req, res) => {
+app.post("/search_casual_contacts_visitor", async (req, res) => {
 	// console.log("hey");
 	var check_in_contacts_records_arr = new Array();
 	const confirmed_visitor = await userVisitor.findOne({
@@ -294,27 +446,148 @@ app.post("/search_casual_contacts_1", async (req, res) => {
 		// return res.send(true);
 		var confirmed_visitor_id = confirmed_visitor._id;
 		var counter = 0;
+		console.log(JSON.stringify(req.body.check_in_timerange));
 		req.body.check_in_timerange.forEach(async function (item) {
 			// console.log(item);
-			const check_in_contacts_records = await checkInRecord.find({
-				$and: [
-					{ user_visitor: { $ne: confirmed_visitor_id } },
-					{
-						user_premiseowner: req.body.check_in_timerange[0].user_premiseowner,
-					},
-					{
-						date_created: {
-							$gte: new Date(req.body.check_in_timerange[0].time_from),
-							$lte: new Date(req.body.check_in_timerange[0].time_to),
+			const check_in_contacts_records = await checkInRecord
+				.find({
+					$and: [
+						{
+							$or: [
+								{ user_visitor: { $ne: confirmed_visitor_id } },
+								{ visitor_dependent: { $exists: true, $ne: null } },
+								// { visitor_dependent: confirmed_visitor_id  },
+							],
 						},
-					},
-				],
-			});
+						{
+							user_premiseowner: item.user_premiseowner,
+						},
+						{
+							date_created: {
+								$gte: new Date(item.time_from),
+								$lte: new Date(item.time_to),
+							},
+						},
+					],
+				})
+				.populate("user_visitor", "ic_num")
+				.populate("visitor_dependent", "ic_num")
+				.exec();
+			// .populate("user_visitor");
 
 			// console.log(check_in_contacts_records);
+			// console.log(item.check_in_record_id);
+			var check_in_record_id = item.check_in_record_id;
+			check_in_contacts_records.forEach(async function (item) {
+				// console.log(item.user_visitor);
+				// var innerObj = {};
+				// innerObj[check_in_record_id] = item;
+				// item.check_in_record_id = check_in_record_id;
+				// Object.assign(item, {"check_in_record_id": check_in_record_id});
+				// item[_id] = { "_id": item._id};
+
+				// item["check_in_record_id"] = check_in_record_id;
+				if (item.visitor_dependent !== undefined) {
+					check_in_contacts_records_arr.push({
+						_id: item._id,
+						check_in_record_id: check_in_record_id,
+						user_visitor: item.user_visitor,
+						user_premiseowner: item.user_premiseowner,
+						premise_qr_code: item.premise_qr_code,
+						visitor_dependent: item.visitor_dependent,
+						date_created: item.date_created,
+					});
+				} else {
+					check_in_contacts_records_arr.push({
+						_id: item._id,
+						check_in_record_id: check_in_record_id,
+						user_visitor: item.user_visitor,
+						user_premiseowner: item.user_premiseowner,
+						premise_qr_code: item.premise_qr_code,
+						// visitor_dependent: item.visitor_dependent,
+						date_created: item.date_created,
+					});
+				}
+			});
+
+			if (counter == req.body.check_in_timerange.length - 1) {
+				console.log(check_in_contacts_records_arr);
+				res.send(check_in_contacts_records_arr);
+			}
+
+			// console.log(check_in_contacts_records_arr_final);
+			// res.send(check_in_contacts_records);
+			counter += 1;
+		});
+		// res.send(check_in_contacts_records_arr_final);
+	}
+});
+
+app.post("/search_casual_contacts_dependent", async (req, res) => {
+	// console.log("hey");
+	var check_in_contacts_records_arr = new Array();
+	const confirmed_visitor = await visitorDependent.findOne({
+		ic_num: req.body.ic_number,
+	});
+	if (!confirmed_visitor) {
+		return res.send(false);
+	} else {
+		// return res.send(true);
+		var confirmed_visitor_id = confirmed_visitor._id;
+		var counter = 0;
+		console.log(req.body.check_in_timerange);
+		req.body.check_in_timerange.forEach(async function (item) {
+			// console.log(item);
+			const check_in_contacts_records = await checkInRecord
+				.find({
+					$and: [
+						{
+							visitor_dependent: { $ne: confirmed_visitor_id },
+							// { visitor_dependent: confirmed_visitor_id  },
+						},
+						{
+							user_premiseowner: item.user_premiseowner,
+						},
+						{
+							date_created: {
+								$gte: new Date(item.time_from),
+								$lte: new Date(item.time_to),
+							},
+						},
+					],
+				})
+				.populate("user_visitor", "ic_num")
+				.populate("visitor_dependent", "ic_num")
+				.exec();
+			// .populate("user_visitor");
+
+			// console.log(check_in_contacts_records);
+			// console.log(item.check_in_record_id);
+			var check_in_record_id = item.check_in_record_id;
 			check_in_contacts_records.forEach(async function (item) {
 				// console.log(item);
-				check_in_contacts_records_arr.push(item);
+				// check_in_contacts_records_arr.push(item);
+				if (item.visitor_dependent !== undefined) {
+					check_in_contacts_records_arr.push({
+						_id: item._id,
+						check_in_record_id: check_in_record_id,
+						user_visitor: item.user_visitor,
+						user_premiseowner: item.user_premiseowner,
+						premise_qr_code: item.premise_qr_code,
+						visitor_dependent: item.visitor_dependent,
+						date_created: item.date_created,
+					});
+				} else {
+					check_in_contacts_records_arr.push({
+						_id: item._id,
+						check_in_record_id: check_in_record_id,
+						user_visitor: item.user_visitor,
+						user_premiseowner: item.user_premiseowner,
+						premise_qr_code: item.premise_qr_code,
+						// visitor_dependent: item.visitor_dependent,
+						date_created: item.date_created,
+					});
+				}
 			});
 			if (counter == req.body.check_in_timerange.length - 1) {
 				console.log(check_in_contacts_records_arr);

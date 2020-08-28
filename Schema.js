@@ -26,14 +26,14 @@ mongoose
 // user schema
 const userVisitorSchema = new mongoose.Schema({
 	ic_num: { type: String, required: true },
-	ic_fname: { type: String, required: true  },
-	ic_address: { type: String, required: true  },
-	phone_no: { type: String, required: true  },
-	email: { type: String, required: true  },
-	home_lat: { type: Number, required: true  },
-	home_lng: { type: Number, required: true  },
-	home_id: { type: String, required: true  },
-	password: { type: String, required: true  },
+	ic_fname: { type: String, required: true },
+	ic_address: { type: String, required: true },
+	phone_no: { type: String, required: true },
+	email: { type: String, required: true },
+	home_lat: { type: Number, required: true },
+	home_lng: { type: Number, required: true },
+	home_id: { type: String, required: true },
+	password: { type: String, required: true },
 	// date_created: { type: String, required: true },
 	// date_created: { type: Date, default: Date.now },
 	date_created: { type: Date },
@@ -82,6 +82,71 @@ const checkInRecordSchema = new mongoose.Schema({
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "premise_qr_code",
 	},
+	visitor_dependent: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "visitor_dependent",
+	},
+	date_created: { type: Date },
+});
+
+// dependent schema
+const visitorDependentSchema = new mongoose.Schema({
+	ic_num: { type: String, required: true },
+	ic_fname: { type: String, required: true },
+	relationship: { type: String, required: true },
+	user_visitor: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "user_visitor",
+	},
+	date_created: { type: Date },
+});
+
+// saved casual contact groups schema
+const savedCasualContactsGroupSchema = new mongoose.Schema({
+	confirmed_case_visitor: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "user_visitor",
+	},
+	confirmed_case_dependent: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "visitor_dependent",
+	},
+	day_range_check_in: { type: String, required: true },
+	time_range_check_in_before: { type: String, required: true },
+	time_range_check_in_after: { type: String, required: true },
+	completed: { type: Boolean, required: true },
+	date_created: { type: Date },
+});
+
+// dependent schema
+const savedConfirmedCaseCheckInSchema = new mongoose.Schema({
+	saved_casual_contacts_group: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "saved_casual_contacts_group",
+	},
+	check_in_record: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "check_in_record",
+	},
+	completed: { type: Boolean, required: true },
+	date_created: { type: Date },
+});
+
+// dependent schema
+const savedCasualContactCheckInSchema = new mongoose.Schema({
+	saved_casual_contacts_group: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "saved_casual_contacts_group",
+	},
+	saved_confirmed_case_check_in: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "saved_confirmed_case_check_in",
+	},
+	check_in_record: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "check_in_record",
+	},
+	completed: { type: Boolean, required: true },
 	date_created: { type: Date },
 });
 
@@ -100,8 +165,19 @@ const userPremiseOwner = mongoose.model(
 );
 const premiseQRCode = mongoose.model("premise_qr_code", premiseQRCodeSchema);
 const checkInRecord = mongoose.model("check_in_record", checkInRecordSchema);
+const visitorDependent = mongoose.model(
+	"visitor_dependent",
+	visitorDependentSchema
+);
+const savedCasualContactsGroup = mongoose.model("saved_casual_contacts_group", savedCasualContactsGroupSchema);
+const savedConfirmedCaseCheckIn = mongoose.model("saved_confirmed_case_check_in", savedConfirmedCaseCheckInSchema);
+const savedCasualContactCheckIn = mongoose.model("saved_casual_contact_check_in", savedCasualContactCheckInSchema);
 
 module.exports.userVisitor = userVisitor;
 module.exports.userPremiseOwner = userPremiseOwner;
 module.exports.premiseQRCode = premiseQRCode;
 module.exports.checkInRecord = checkInRecord;
+module.exports.visitorDependent = visitorDependent;
+module.exports.savedCasualContactsGroup = savedCasualContactsGroup;
+module.exports.savedConfirmedCaseCheckIn = savedConfirmedCaseCheckIn;
+module.exports.savedCasualContactCheckIn = savedCasualContactCheckIn;
