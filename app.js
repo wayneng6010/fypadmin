@@ -262,6 +262,67 @@ app.post("/testing", async (req, res) => {
 	// }
 });
 
+app.post("/getSavedCasualContactsGroups", async (req, res) => {
+	const savedGroups = await savedCasualContactsGroup
+		.find()
+		.populate("confirmed_case_visitor")
+		.populate("confirmed_case_dependent")
+		.exec();
+
+	if (!savedGroups) {
+		return res.send(false);
+	}
+	res.send(savedGroups);
+});
+
+app.post("/getEachPremiseName", async (req, res) => {
+	const premise_info = await userPremiseOwner.findOne({
+		_id: req.body.user_premiseowner_id,
+	});
+
+	if (!premise_info) {
+		return res.send(false);
+	}
+	res.send(premise_info);
+});
+
+app.post("/getConfirmedCaseCheckIns", async (req, res) => {
+	// console.log(req.body.group_record_id);
+	const savedCheckIns = await savedConfirmedCaseCheckIn
+		.find({ saved_casual_contacts_group: req.body.group_record_id })
+		.populate("check_in_record")
+		.populate("user_premiseowner")
+		.exec();
+
+	if (!savedCheckIns) {
+		return res.send(false);
+	}
+	res.send(savedCheckIns);
+});
+
+app.post("/getCasualContactCheckIns", async (req, res) => {
+	console.log(req.body.check_in_id);
+	const savedCheckIns = await savedCasualContactCheckIn
+		// .find({ saved_confirmed_case_check_in: req.body.check_in_id })
+		.find({
+			$and: [
+				{
+					saved_confirmed_case_check_in: req.body.check_in_id,
+				},
+				{ saved_casual_contacts_group: req.body.check_in_group_id },
+			],
+		})
+		.populate("check_in_record")
+		.populate("user_visitor")
+		.populate("visitor_dependent")
+		.exec();
+
+	if (!savedCheckIns) {
+		return res.send(false);
+	}
+	res.send(savedCheckIns);
+});
+
 app.post("/savedCasualContactsGroup", async (req, res) => {
 	console.log(req.body.confirmed_case_id);
 	console.log(req.body.confirmed_case_user_type);
@@ -294,10 +355,11 @@ app.post("/savedCasualContactsGroup", async (req, res) => {
 	try {
 		var saved_group = await savedGroup.save();
 		req.body.checked_in_premise.forEach(async function (item) {
-			// console.log(item._id);
+			console.log(item._id);
 			savedCheckIn = new savedConfirmedCaseCheckIn({
 				saved_casual_contacts_group: saved_group._id,
 				check_in_record: item._id,
+				user_premiseowner: item.user_premiseowner._id,
 				completed: false,
 				date_created: new Date(now.getTime() + 480 * 60000),
 			});
@@ -305,11 +367,13 @@ app.post("/savedCasualContactsGroup", async (req, res) => {
 		});
 
 		req.body.casual_contacts_visitors.forEach(async function (item) {
-			console.log(item._id);
+			console.log(item);
 			saved_casual_contact_check_in = new savedCasualContactCheckIn({
 				saved_casual_contacts_group: saved_group._id,
 				saved_confirmed_case_check_in: item.check_in_record_id,
 				check_in_record: item._id,
+				user_visitor: item.user_visitor._id,
+				visitor_dependent: item.visitor_dependent._id,
 				completed: false,
 				date_created: new Date(now.getTime() + 480 * 60000),
 			});

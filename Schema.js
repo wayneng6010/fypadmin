@@ -128,6 +128,10 @@ const savedConfirmedCaseCheckInSchema = new mongoose.Schema({
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "check_in_record",
 	},
+	user_premiseowner: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "user_premiseowner",
+	},
 	completed: { type: Boolean, required: true },
 	date_created: { type: Date },
 });
@@ -145,6 +149,14 @@ const savedCasualContactCheckInSchema = new mongoose.Schema({
 	check_in_record: {
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "check_in_record",
+	},
+	user_visitor: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "user_visitor",
+	},
+	visitor_dependent: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "visitor_dependent",
 	},
 	completed: { type: Boolean, required: true },
 	date_created: { type: Date },

@@ -55,7 +55,7 @@ class NavBar extends Component {
 						<a class="btn btn-primary btn-lg">Trace Casual Contacts</a>
 					</Link>
 					<button class="dropdown-btn">
-						Dropdown
+						Casual Contacts
 						<i class="fa fa-caret-down"></i>
 					</button>
 					<div class="dropdown-container">
@@ -64,14 +64,14 @@ class NavBar extends Component {
 								pathname: `/search_casual_contacts`,
 							}}
 						>
-							<a class="btn btn-primary btn-lg">Trace Casual Contacts</a>
+							<a class="btn btn-primary btn-lg">Add Casual Contacts</a>
 						</Link>
 						<Link
 							to={{
-								pathname: `/`,
+								pathname: `/view_casual_contacts`,
 							}}
 						>
-							<a class="btn btn-primary btn-lg">Dashboard</a>
+							<a class="btn btn-primary btn-lg">View Casual Contacts</a>
 						</Link>
 					</div>
 					<a href="#contact">Search</a>
