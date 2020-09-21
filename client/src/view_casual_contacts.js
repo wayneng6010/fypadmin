@@ -36,15 +36,22 @@ class view_casual_contacts extends Component {
 				jsonDataReturned.forEach(function (item) {
 					if (item.hasOwnProperty("confirmed_case_visitor")) {
 						// alert(JSON.stringify(item.confirmed_case_visitor));
-						item.visitor_and_dependent_fname = item.confirmed_case_visitor.ic_fname;
-						item.visitor_and_dependent_ic_num = item.confirmed_case_visitor.ic_num;
+						item.visitor_and_dependent_fname =
+							item.confirmed_case_visitor.ic_fname;
+						item.visitor_and_dependent_ic_num =
+							item.confirmed_case_visitor.ic_num;
 					} else if (item.hasOwnProperty("confirmed_case_dependent")) {
 						// alert(JSON.stringify(item.confirmed_case_dependent));
-						item.visitor_and_dependent_fname = item.confirmed_case_dependent.ic_fname + " (Dependent)";
-						item.visitor_and_dependent_ic_num = item.confirmed_case_dependent.ic_num;
+						item.visitor_and_dependent_fname =
+							item.confirmed_case_dependent.ic_fname + " (Dependent)";
+						item.visitor_and_dependent_ic_num =
+							item.confirmed_case_dependent.ic_num;
 					}
+					item.date_created = item.date_created
+						.replace("T", " ")
+						.substring(0, item.date_created.indexOf(".") - 3);
 				});
-				alert(JSON.stringify(jsonDataReturned));
+				// alert(JSON.stringify(jsonDataReturned));
 
 				this.setState({ records_group: jsonDataReturned });
 
@@ -72,8 +79,9 @@ class view_casual_contacts extends Component {
 				</div>
 				<div class="page_content">
 					<h2>Saved Casual Contact Group Record</h2>
+
 					{records_group == null ? (
-						<p></p>
+						<p>Loading ...</p>
 					) : (
 						<ReactTable
 							data={records_group}
@@ -106,22 +114,52 @@ class view_casual_contacts extends Component {
 									Header: "View Casual Contacts",
 									accessor: "_id",
 									Cell: ({ value }) => (
-										<div>
-											<span>4 person </span>
+										<div class="centerButton">
+											{/* <span>4 person </span> */}
 											<Link
 												to={{
 													pathname: `/view_confirmed_case_check_ins/${value}`,
 												}}
 											>
-												<button class="manage_btn register btn btn-success btn-lg">
+												<button class="manage_btn register btn btn-success">
 													View
 												</button>
 											</Link>
 										</div>
 									),
 								},
+								{
+									Header: "Delete",
+									accessor: "_id",
+									Cell: ({ value }) => (
+										<div class="centerButton">
+											<button class="manage_btn register btn btn-danger">
+												Delete
+											</button>
+										</div>
+									),
+								},
+								// {
+								// 	Header: "View Simplified Casual Contacts",
+								// 	accessor: "_id",
+								// 	Cell: ({ value }) => (
+								// 		<div>
+								// 			{/* <span>4 person </span> */}
+								// 			<Link
+								// 				to={{
+								// 					pathname: `/view_simp_casual_contact_check_ins/${value}`,
+								// 				}}
+								// 			>
+								// 				<button class="manage_btn register btn btn-success">
+								// 					View Simplified
+								// 				</button>
+
+								// 			</Link>
+								// 		</div>
+								// 	),
+								// },
 							]}
-							defaultPageSize={5}
+							defaultPageSize={10}
 							className="-striped -highlight"
 						/>
 					)}

@@ -7,6 +7,9 @@ import NavBar from "./NavBar";
 import view_casual_contacts from "./view_casual_contacts";
 import view_confirmed_case_check_ins from "./view_confirmed_case_check_ins";
 import view_casual_contact_check_ins from "./view_casual_contact_check_ins";
+import view_simp_casual_contact_check_ins from "./view_simp_casual_contact_check_ins";
+import download_excel from "./download_excel";
+
 // import savedArtist from "./savedArtist";
 // import register from "./register";
 // import login from "./login";
@@ -18,10 +21,32 @@ const Router = () => (
 	<BrowserRouter>
 		<Switch>
 			<Route path="/" component={App} exact />
-			<Route path="/search_casual_contacts" component={search_casual_contacts} exact />
-			<Route path="/view_casual_contacts" component={view_casual_contacts} exact />
-			<Route path="/view_confirmed_case_check_ins/:group_record_id" component={view_confirmed_case_check_ins} />
-			<Route path="/view_casual_contact_check_ins/:check_in_id:check_in_group_id" component={view_casual_contact_check_ins} />
+			<Route
+				path="/search_casual_contacts"
+				component={search_casual_contacts}
+				exact
+			/>
+			<Route
+				path="/view_casual_contacts"
+				component={view_casual_contacts}
+				exact
+			/>
+			<Route
+				path="/view_confirmed_case_check_ins/:group_record_id"
+				component={view_confirmed_case_check_ins}
+			/>
+			<Route
+				path="/view_casual_contact_check_ins/:check_in_id:check_in_group_id"
+				component={view_casual_contact_check_ins}
+			/>
+			<Route
+				path="/view_simp_casual_contact_check_ins/:group_record_id"
+				component={view_simp_casual_contact_check_ins}
+			/>
+			<Route
+				path="/download_excel"
+				component={download_excel}
+			/>
 			<Route path="/NavBar" component={NavBar} exact />
 			{/* <Route path="/eachArtist/:artist_id,:artist_name" component={eachArtist} />
 			<Route path="/savedArtist/" component={savedArtist} />

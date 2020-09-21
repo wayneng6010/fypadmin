@@ -143,7 +143,7 @@
 }
 
 #trace_casual_contacts_form .label_outer {
-	width: 300px;
+	width: 450px;
 }
 
 #trace_casual_contacts_form input {
@@ -158,13 +158,53 @@
 #trace_casual_contacts_form #check_in_time_range_before_min,
 #trace_casual_contacts_form #check_in_time_range_after_hr,
 #trace_casual_contacts_form #check_in_time_range_after_min {
-  width: 100px;
-  margin-right: 10px;
+	width: 100px;
+	margin-right: 10px;
 }
 
 #trace_casual_contacts_form #check_in_time_range_before_min,
-#trace_casual_contacts_form #check_in_time_range_after_min{
-  margin-left: 10px;
+#trace_casual_contacts_form #check_in_time_range_after_min {
+	margin-left: 10px;
+}
+
+#long_btn {
+	width: 300px;
+}
+
+.centerButton {
+	display: flex;
+	align-content: center;
+	justify-content: center;
+}
+
+.casual_contacts_outer {
+	margin-bottom: 20px;
+}
+
+#confirmed_case_info_outer {
+	border-radius: 10px;
+	background-color: #ececec;
+	width: 500px;
+	height: 110px;
+	margin: 30px 0 20px 0;
+}
+
+#confirmed_case_info_title {
+	padding: 15px 0px;
+	text-align: center;
+}
+
+#confirmed_case_info {
+	display: flex;
+}
+
+#confirmed_case_info p {
+	flex: 0.3;
+	text-align: center;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin: 0;
 }
 
 @keyframes App-logo-spin {

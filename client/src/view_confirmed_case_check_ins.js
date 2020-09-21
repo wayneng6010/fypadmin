@@ -13,6 +13,7 @@ class view_confirmed_case_check_ins extends Component {
 		this.state = {
 			group_record_id: null,
 			check_in_records: null,
+			selected_records_group: null,
 		};
 	}
 
@@ -24,7 +25,7 @@ class view_confirmed_case_check_ins extends Component {
 	}
 
 	getEachPremiseName = async (confirmed_case_check_ins) => {
-		var confirmed_case_check_ins_returned = new Array();
+		// var confirmed_case_check_ins_returned = new Array();
 		var counter = 0;
 
 		confirmed_case_check_ins.forEach(async function (item) {
@@ -74,7 +75,55 @@ class view_confirmed_case_check_ins extends Component {
 	};
 
 	startup = async () => {
-		alert(this.state.group_record_id);
+		// alert(this.state.group_record_id);
+		await fetch("/getSelectedSavedCasualContactsGroups", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ group_record_id: this.state.group_record_id }),
+		})
+			.then((res) => {
+				// console.log(JSON.stringify(res.headers));
+				return res.json();
+			})
+			.then((jsonData) => {
+				var jsonDataReturned = jsonData;
+				if (jsonDataReturned.hasOwnProperty("confirmed_case_visitor")) {
+					// alert(JSON.stringify(item.confirmed_case_visitor));
+					jsonDataReturned.visitor_and_dependent_fname =
+						jsonDataReturned.confirmed_case_visitor.ic_fname;
+					jsonDataReturned.visitor_and_dependent_ic_num =
+						jsonDataReturned.confirmed_case_visitor.ic_num;
+				} else if (
+					jsonDataReturned.hasOwnProperty("confirmed_case_dependent")
+				) {
+					// alert(JSON.stringify(item.confirmed_case_dependent));
+					jsonDataReturned.visitor_and_dependent_fname =
+						jsonDataReturned.confirmed_case_dependent.ic_fname + " (Dependent)";
+					jsonDataReturned.visitor_and_dependent_ic_num =
+						jsonDataReturned.confirmed_case_dependent.ic_num;
+				}
+				jsonDataReturned.date_created = jsonDataReturned.date_created
+					.replace("T", " ")
+					.substring(0, jsonDataReturned.date_created.indexOf(".") - 3);
+				// alert(JSON.stringify(jsonDataReturned));
+
+				this.setState({ selected_records_group: jsonDataReturned });
+
+				// alert(JSON.stringify(this.state.records_group));
+
+				// if (jsonData) {
+				// 	alert("Login successful");
+				// 	// this.props.navigation.navigate("visitor_home");
+				// } else {
+				// 	alert("Phone number or password is incorrect");
+				// }
+			})
+			.catch((error) => {
+				alert("Error: " + error);
+			});
+
 		await fetch("/getConfirmedCaseCheckIns", {
 			method: "POST",
 			headers: {
@@ -98,7 +147,7 @@ class view_confirmed_case_check_ins extends Component {
 
 				this.setState({ check_in_records: jsonData });
 				// this.getEachPremiseName(jsonData);
-				alert(JSON.stringify(this.state.check_in_records));
+				// alert(JSON.stringify(this.state.check_in_records));
 				// if (jsonData) {
 				// 	alert("Login successful");
 				// 	// this.props.navigation.navigate("visitor_home");
@@ -111,8 +160,13 @@ class view_confirmed_case_check_ins extends Component {
 			});
 	};
 
+	isDisable = (value) => {
+		// alert(value);
+		return false;
+	};
+
 	render() {
-		var { check_in_records } = this.state;
+		var { check_in_records, selected_records_group } = this.state;
 		return (
 			<div class="">
 				<NavBar />
@@ -121,6 +175,28 @@ class view_confirmed_case_check_ins extends Component {
 				</div>
 				<div class="page_content">
 					<h2>Saved Confirmed Case Check In Record</h2>
+					{selected_records_group == null ? (
+						<p></p>
+					) : (
+						<div>
+							<p>{selected_records_group.visitor_and_dependent_fname}</p>
+							<p>{selected_records_group.visitor_and_dependent_ic_num}</p>
+							<p>
+								{"Check ins of " +
+									selected_records_group.day_range_check_in +
+									" days before"}
+							</p>
+							<p>
+								{"Check in time range before: " +
+									selected_records_group.time_range_check_in_before}
+							</p>
+							<p>
+								{"Check in time range after: " +
+									selected_records_group.time_range_check_in_after}
+							</p>
+							<p>{"Date created: " + selected_records_group.date_created}</p>
+						</div>
+					)}
 					{check_in_records == null ? (
 						<p></p>
 					) : (
@@ -155,8 +231,11 @@ class view_confirmed_case_check_ins extends Component {
 									Header: "View Casual Contacts",
 									// accessor: "check_in_record._id",
 									id: "id",
-									accessor: d => `${d.check_in_record._id}` + "," +`${d.saved_casual_contacts_group}`,
-									
+									accessor: (d) =>
+										`${d.check_in_record._id}` +
+										"," +
+										`${d.saved_casual_contacts_group}`,
+
 									Cell: ({ value }) => (
 										<div>
 											<span>4 person </span>
@@ -165,7 +244,10 @@ class view_confirmed_case_check_ins extends Component {
 													pathname: `/view_casual_contact_check_ins/${value}`,
 												}}
 											>
-												<button class="manage_btn register btn btn-success btn-lg">
+												<button
+													class="manage_btn register btn btn-success"
+													disabled={this.isDisable(value)}
+												>
 													View
 												</button>
 											</Link>
@@ -173,7 +255,7 @@ class view_confirmed_case_check_ins extends Component {
 									),
 								},
 							]}
-							defaultPageSize={5}
+							defaultPageSize={10}
 							className="-striped -highlight"
 						/>
 					)}

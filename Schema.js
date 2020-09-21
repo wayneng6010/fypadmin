@@ -162,6 +162,28 @@ const savedCasualContactCheckInSchema = new mongoose.Schema({
 	date_created: { type: Date },
 });
 
+// hotspot
+const hotspotSchema = new mongoose.Schema({
+	saved_casual_contacts_group: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "saved_casual_contacts_group",
+	},
+	check_in_record: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "check_in_record",
+	},
+	user_premiseowner: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "user_premiseowner",
+	},
+	type: { type: String, required: true },
+	place_id: { type: String, required: true },
+	place_lat: { type: String, required: true },
+	place_lng: { type: String, required: true },
+	// date_end: { type: Date },
+	date_created: { type: Date },
+});
+
 if (process.env.NODE_ENV === "production") {
 	app.use(express.static("client/build"));
 
@@ -181,9 +203,19 @@ const visitorDependent = mongoose.model(
 	"visitor_dependent",
 	visitorDependentSchema
 );
-const savedCasualContactsGroup = mongoose.model("saved_casual_contacts_group", savedCasualContactsGroupSchema);
-const savedConfirmedCaseCheckIn = mongoose.model("saved_confirmed_case_check_in", savedConfirmedCaseCheckInSchema);
-const savedCasualContactCheckIn = mongoose.model("saved_casual_contact_check_in", savedCasualContactCheckInSchema);
+const savedCasualContactsGroup = mongoose.model(
+	"saved_casual_contacts_group",
+	savedCasualContactsGroupSchema
+);
+const savedConfirmedCaseCheckIn = mongoose.model(
+	"saved_confirmed_case_check_in",
+	savedConfirmedCaseCheckInSchema
+);
+const savedCasualContactCheckIn = mongoose.model(
+	"saved_casual_contact_check_in",
+	savedCasualContactCheckInSchema
+);
+const hotspot = mongoose.model("hotspot", hotspotSchema);
 
 module.exports.userVisitor = userVisitor;
 module.exports.userPremiseOwner = userPremiseOwner;
@@ -193,3 +225,4 @@ module.exports.visitorDependent = visitorDependent;
 module.exports.savedCasualContactsGroup = savedCasualContactsGroup;
 module.exports.savedConfirmedCaseCheckIn = savedConfirmedCaseCheckIn;
 module.exports.savedCasualContactCheckIn = savedCasualContactCheckIn;
+module.exports.hotspot = hotspot;

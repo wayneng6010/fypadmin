@@ -14,6 +14,7 @@ class search_casual_contacts extends Component {
 		super();
 		// this.startup();
 		this.state = {
+			confirmed_case_ic_num: null,
 			confirmed_case_info: null,
 			confirmed_case_user_type: null,
 			checked_in_premise: null,
@@ -21,10 +22,11 @@ class search_casual_contacts extends Component {
 			casual_contacts_this_premise: null,
 			modal_show: false,
 			check_in_day_range: null,
-			check_in_time_range_before_hr: null,
-			check_in_time_range_before_min: null,
-			check_in_time_range_after_hr: null,
-			check_in_time_range_after_min: null,
+			check_in_time_range_before_hr: 0,
+			check_in_time_range_before_min: 30,
+			check_in_time_range_after_hr: 8,
+			check_in_time_range_after_min: 0,
+			ttl_contact_counts: null,
 		};
 	}
 
@@ -61,6 +63,14 @@ class search_casual_contacts extends Component {
 	};
 
 	saveCasualContacts = async () => {
+		// const check_in_premise = this.state.checked_in_premise;
+		// var check_in_premise_arr = new Array();
+
+		// check_in_premise.forEach(function (item) {
+		// 	alert(item.user_premiseowner.premise_name);
+		// 	check_in_premise_arr.push(item.user_premiseowner.premise_name);
+		// });
+		// alert(JSON.stringify(check_in_premise));
 		var check_in_time_range_before =
 			this.state.check_in_time_range_before_hr +
 			" hr " +
@@ -77,6 +87,7 @@ class search_casual_contacts extends Component {
 				"Content-Type": "application/json",
 			},
 			body: JSON.stringify({
+				confirmed_case_ic_num: this.state.confirmed_case_ic_num,
 				confirmed_case_id: this.state.confirmed_case_info._id,
 				confirmed_case_user_type: this.state.confirmed_case_user_type,
 				check_in_day_range: this.state.check_in_day_range,
@@ -105,6 +116,9 @@ class search_casual_contacts extends Component {
 	};
 
 	search_casual_contacts_visitor = async (ic_number, check_in_timerange) => {
+		// alert(JSON.stringify(this.state.checked_in_premise));
+		var checked_in_premise = this.state.checked_in_premise;
+
 		await fetch("/search_casual_contacts_visitor", {
 			method: "POST",
 			headers: {
@@ -121,12 +135,30 @@ class search_casual_contacts extends Component {
 			})
 			.then((jsonData) => {
 				// alert(JSON.stringify(jsonData));
-				jsonData.forEach(function (item) {
-					if (!item.hasOwnProperty("visitor_dependent")) {
-						item["visitor_dependent"] = { ic_num: "-" };
-					}
-				});
+				// jsonData.forEach(function (item) {
+				// 	if (!item.hasOwnProperty("visitor_dependent")) {
+				// 		item["visitor_dependent"] = { ic_num: "-" };
+				// 	}
+				// });
 				this.setState({ casual_contacts_visitors: jsonData });
+				var contact_counter = 0,
+					ttl_contact_counter = 0;
+				checked_in_premise.forEach(function (checkin_item) {
+					contact_counter = 0;
+					jsonData.forEach(function (contact_item) {
+						if (contact_item.check_in_record_id == checkin_item._id) {
+							// alert(contact_item._id);
+							contact_counter += 1;
+							ttl_contact_counter += 1;
+						}
+					});
+					checkin_item.casual_contact_counts = contact_counter;
+					// alert(contact_counter);
+				});
+				this.setState({
+					checked_in_premise: checked_in_premise,
+					ttl_contact_counts: ttl_contact_counter,
+				});
 			})
 			.catch((error) => {
 				alert("Error: " + error);
@@ -134,6 +166,7 @@ class search_casual_contacts extends Component {
 	};
 
 	search_casual_contacts_dependent = async (ic_number, check_in_timerange) => {
+		var checked_in_premise = this.state.checked_in_premise;
 		await fetch("/search_casual_contacts_dependent", {
 			method: "POST",
 			headers: {
@@ -149,13 +182,25 @@ class search_casual_contacts extends Component {
 				return res.json();
 			})
 			.then((jsonData) => {
-				// alert(JSON.stringify(jsonData));
-				jsonData.forEach(function (item) {
-					if (!item.hasOwnProperty("visitor_dependent")) {
-						item["visitor_dependent"] = { ic_num: "-" };
-					}
-				});
 				this.setState({ casual_contacts_visitors: jsonData });
+				var contact_counter = 0,
+					ttl_contact_counter = 0;
+				checked_in_premise.forEach(function (checkin_item) {
+					contact_counter = 0;
+					jsonData.forEach(function (contact_item) {
+						if (contact_item.check_in_record_id == checkin_item._id) {
+							// alert(contact_item._id);
+							contact_counter += 1;
+							ttl_contact_counter += 1;
+						}
+					});
+					checkin_item.casual_contact_counts = contact_counter;
+					// alert(contact_counter);
+				});
+				this.setState({
+					checked_in_premise: checked_in_premise,
+					ttl_contact_counts: ttl_contact_counter,
+				});
 			})
 			.catch((error) => {
 				alert("Error: " + error);
@@ -250,7 +295,7 @@ class search_casual_contacts extends Component {
 					counter += 1;
 					// var x = item.date_created;
 				});
-				alert(JSON.stringify(check_in_timerange));
+				// alert(JSON.stringify(check_in_timerange));
 				this.setState({ checked_in_premise: jsonData });
 				this.search_casual_contacts_dependent(ic_number, check_in_timerange);
 			})
@@ -333,7 +378,7 @@ class search_casual_contacts extends Component {
 				// 	item.date_created = new Date(item.date_created);
 				// });
 				var checked_in_premise = jsonData;
-				alert(JSON.stringify(jsonData));
+				// alert(JSON.stringify(jsonData));
 
 				var check_in_timerange = new Array();
 				var counter = 0;
@@ -421,6 +466,7 @@ class search_casual_contacts extends Component {
 		currentTime.setDate(currentTime.getDate() - check_in_day_range);
 
 		this.setState({
+			confirmed_case_ic_num: ic_number,
 			check_in_day_range: check_in_day_range,
 			check_in_time_range_before_hr: check_in_time_range_before_hr,
 			check_in_time_range_before_min: check_in_time_range_before_min,
@@ -483,6 +529,22 @@ class search_casual_contacts extends Component {
 			}
 			// alert(JSON.stringify(casual_contacts_this_premise));
 		});
+
+		casual_contacts_this_premise.forEach(function (item) {
+			if (item.hasOwnProperty("visitor_dependent")) {
+				item["ic_num_merged"] = item.visitor_dependent.ic_num;
+				item["ic_fname_merged"] =
+					item.visitor_dependent.ic_fname + " (Dependent)";
+			} else {
+				item["ic_num_merged"] = item.user_visitor.ic_num;
+				item["ic_fname_merged"] = item.user_visitor.ic_fname;
+			}
+			item["date_created_simplified"] = item.date_created
+				.replace("T", " ")
+				.substring(0, item.date_created.indexOf(".") - 3);
+			// alert(JSON.stringify(casual_contacts_this_premise));
+		});
+
 		this.setState({
 			casual_contacts_this_premise: casual_contacts_this_premise,
 		});
@@ -497,12 +559,63 @@ class search_casual_contacts extends Component {
 		this.view_casual_contacts(confirmed_case_check_in_id);
 	};
 
+	handleChange_before_hr = (e) => {
+		var value = e.target.value;
+		if (value > 48) {
+			value = 48;
+		}
+		value = value.toString().replace(/\D/g, "");
+		this.setState({ check_in_time_range_before_hr: value });
+	};
+
+	handleChange_before_min = (e) => {
+		var value = e.target.value;
+		if (value > 59) {
+			value = 59;
+		}
+		value = value.toString().replace(/\D/g, "");
+		this.setState({ check_in_time_range_before_min: value });
+	};
+
+	handleChange_after_hr = (e) => {
+		var value = e.target.value;
+		if (value > 48) {
+			value = 48;
+		}
+		value = value.toString().replace(/\D/g, "");
+		this.setState({ check_in_time_range_after_hr: value });
+	};
+
+	handleChange_after_min = (e) => {
+		var value = e.target.value;
+		if (value > 59) {
+			value = 59;
+		}
+		value = value.toString().replace(/\D/g, "");
+		this.setState({ check_in_time_range_after_min: value });
+	};
+
+	isDisabled = (value) => {
+		var { casual_contacts_visitors } = this.state;
+		var disabled = true;
+		casual_contacts_visitors.forEach(function (item) {
+			// alert(value);
+			if (item.check_in_record_id == value) {
+				// alert("as");
+				disabled = false;
+			}
+		});
+		// alert(disabled);
+		return disabled;
+	};
+
 	render() {
 		var {
 			checked_in_premise,
 			casual_contacts_visitors,
 			casual_contacts_this_premise,
 			confirmed_case_info,
+			ttl_contact_counts,
 		} = this.state;
 		return (
 			<div class="">
@@ -523,13 +636,21 @@ class search_casual_contacts extends Component {
 									// 	accessor: "user_visitor.ic_fname",
 									// },
 									{
-										Header: "Visitor IC No.",
-										accessor: "user_visitor.ic_num",
+										Header: "Name",
+										accessor: "ic_fname_merged",
 									},
 									{
-										Header: "Dependent IC No.",
-										accessor: "visitor_dependent.ic_num",
+										Header: "IC No.",
+										accessor: "ic_num_merged",
 									},
+									// {
+									// 	Header: "Visitor IC No.",
+									// 	accessor: "user_visitor.ic_num",
+									// },
+									// {
+									// 	Header: "Dependent IC No.",
+									// 	accessor: "visitor_dependent.ic_num",
+									// },
 									// {
 									// 	Header: "Phone Number",
 									// 	accessor: "user_visitor.phone_no",
@@ -539,8 +660,8 @@ class search_casual_contacts extends Component {
 									// 	accessor: "user_visitor.email",
 									// },
 									{
-										Header: "Date",
-										accessor: "date_created",
+										Header: "Check In Date Time",
+										accessor: "date_created_simplified",
 									},
 									// {
 									// 	Header: "View Casual Contacts",
@@ -565,9 +686,9 @@ class search_casual_contacts extends Component {
 						<Button variant="secondary" onClick={this.handleClose}>
 							Close
 						</Button>
-						<Button variant="primary" onClick={this.handleClose}>
+						{/* <Button variant="primary" onClick={this.handleClose}>
 							Save Changes
-						</Button>
+						</Button> */}
 					</Modal.Footer>
 				</Modal>
 				<div class="page_header">
@@ -600,7 +721,9 @@ class search_casual_contacts extends Component {
 						<br />
 						<div class="input_outer">
 							<div class="label_outer">
-								<label for="check_in_day_range">Day range of check in</label>
+								<label for="check_in_day_range">
+									Day range of confirmed case check in
+								</label>
 							</div>
 							<select
 								className="form-control"
@@ -644,23 +767,25 @@ class search_casual_contacts extends Component {
 						<div class="input_outer">
 							<div class="label_outer">
 								<label for="check_in_time_range_before">
-									Time range of check in (before)
+									Time range of casual contacts check in (before)
 								</label>
 							</div>
 							<input
-								placeholder="1"
+								placeholder="0"
 								type="number"
 								min="0"
-								max="24"
+								max="48"
 								className="form-control"
 								name="check_in_time_range_before_hr"
 								id="check_in_time_range_before_hr"
 								ref="check_in_time_range_before_hr"
+								value={this.state.check_in_time_range_before_hr}
+								onInput={this.handleChange_before_hr.bind(this)}
 								required
 							/>
 							<span>Hour</span>
 							<input
-								placeholder="0"
+								placeholder="30"
 								type="number"
 								min="0"
 								max="59"
@@ -668,6 +793,8 @@ class search_casual_contacts extends Component {
 								name="check_in_time_range_before_min"
 								id="check_in_time_range_before_min"
 								ref="check_in_time_range_before_min"
+								value={this.state.check_in_time_range_before_min}
+								onInput={this.handleChange_before_min.bind(this)}
 								required
 							/>
 							<span>Minute</span>
@@ -676,18 +803,20 @@ class search_casual_contacts extends Component {
 						<div class="input_outer">
 							<div class="label_outer">
 								<label for="check_in_time_range_after">
-									Time range of check in (after)
+									Time range of casual contacts check in (after)
 								</label>
 							</div>
 							<input
-								placeholder="1"
+								placeholder="8"
 								type="number"
 								min="0"
-								max="24"
+								max="48"
 								className="form-control"
 								name="check_in_time_range_after_hr"
 								id="check_in_time_range_after_hr"
 								ref="check_in_time_range_after_hr"
+								value={this.state.check_in_time_range_after_hr}
+								onInput={this.handleChange_after_hr.bind(this)}
 								required
 							/>
 							<span>Hour</span>
@@ -700,6 +829,8 @@ class search_casual_contacts extends Component {
 								name="check_in_time_range_after_min"
 								id="check_in_time_range_after_min"
 								ref="check_in_time_range_after_min"
+								value={this.state.check_in_time_range_after_min}
+								onInput={this.handleChange_after_min.bind(this)}
 								required
 							/>
 							<span>Minute</span>
@@ -717,13 +848,18 @@ class search_casual_contacts extends Component {
 					this.state.confirmed_case_user_type === null ? (
 						<p></p>
 					) : (
-						<div>
-							<p>{this.state.confirmed_case_user_type}</p>
-							<p>{confirmed_case_info.ic_num}</p>
-							<p>{confirmed_case_info.ic_fname}</p>
+						<div id="confirmed_case_info_outer">
+							<h4 id="confirmed_case_info_title">Confirmed Case Info</h4>
+							<div id="confirmed_case_info">
+								<p>{this.state.confirmed_case_user_type}</p>
+								<p>{confirmed_case_info.ic_num}</p>
+								<p>{confirmed_case_info.ic_fname}</p>
+							</div>
 						</div>
 					)}
-					{checked_in_premise === null || casual_contacts_visitors === null ? (
+					{checked_in_premise === null ||
+					casual_contacts_visitors === null ||
+					ttl_contact_counts === null ? (
 						<p></p>
 					) : (
 						// checked_in_premise.map((item) => (
@@ -745,53 +881,71 @@ class search_casual_contacts extends Component {
 						// 		</button>
 						// 	</div>
 						// ))
-						<ReactTable
-							data={checked_in_premise}
-							columns={[
-								{
-									Header: "Premise Name",
-									accessor: "user_premiseowner.premise_name",
-								},
-								{
-									Header: "Check In Time",
-									accessor: "time_check_in",
-								},
-								{
-									Header: "Time Range (From)",
-									accessor: "time_from",
-								},
-								{
-									Header: "Time Range (To)",
-									accessor: "time_to",
-								},
-								{
-									Header: "View Casual Contacts",
-									accessor: "_id",
-									Cell: ({ value }) => (
-										<div>
-											<span>4 person </span>
-											<button
-												onClick={() => {
-													this.handleShow(value);
-												}}
-											>
-												View
-											</button>
-										</div>
-									),
-								},
-							]}
-							defaultPageSize={5}
-							className="-striped -highlight"
-						/>
+						<div class="casual_contacts_outer">
+							<h4>
+								{"Total Number of Casual Contacts: " +
+									ttl_contact_counts +
+									" person"}
+							</h4>
+							<br />
+							<ReactTable
+								data={checked_in_premise}
+								columns={[
+									{
+										Header: "Premise Name",
+										accessor: "user_premiseowner.premise_name",
+									},
+									{
+										Header: "Check In Time",
+										accessor: "time_check_in",
+									},
+									{
+										Header: "Time Range (From)",
+										accessor: "time_from",
+									},
+									{
+										Header: "Time Range (To)",
+										accessor: "time_to",
+									},
+									{
+										Header: "Number of Contacts",
+										accessor: "casual_contact_counts",
+									},
+									{
+										Header: "View Casual Contacts",
+										accessor: "_id",
+										Cell: ({ value }) => (
+											<div>
+												{/* <span>4 person </span> */}
+												<button
+													class="btn btn-secondary"
+													variant="secondary"
+													disabled={this.isDisabled(value)}
+													onClick={() => {
+														this.handleShow(value);
+													}}
+												>
+													View
+												</button>
+											</div>
+										),
+									},
+								]}
+								defaultPageSize={5}
+								className="-striped -highlight"
+							/>
+							<br />
+							<button
+								class="btn btn-primary"
+								id="long_btn"
+								onClick={() => {
+									this.saveCasualContacts();
+								}}
+							>
+								Save
+							</button>
+						</div>
 					)}
-					<Button
-						onClick={() => {
-							this.saveCasualContacts();
-						}}
-					>
-						Save
-					</Button>
 				</div>
 			</div>
 		);
