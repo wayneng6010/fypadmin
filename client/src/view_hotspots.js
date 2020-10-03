@@ -7,7 +7,7 @@ import "react-table-6/react-table.css";
 // link this page to another page
 import { Link } from "react-router-dom";
 
-class view_casual_contacts extends Component {
+class view_hotspots extends Component {
 	constructor() {
 		super();
 		this.state = {
@@ -19,8 +19,8 @@ class view_casual_contacts extends Component {
 	// signals that the all components have rendered properly
 	componentDidMount() {}
 
-	getCheckInCount = async (groupRecord) => {
-		await fetch("/getCheckInCount", {
+	getHotspotCount = async (groupRecord) => {
+		await fetch("/getHotspotCount", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -75,7 +75,7 @@ class view_casual_contacts extends Component {
 				// alert(JSON.stringify(jsonDataReturned));
 
 				// this.setState({ records_group: jsonDataReturned });
-				this.getCheckInCount(jsonDataReturned);
+				this.getHotspotCount(jsonDataReturned);
 				// alert(JSON.stringify(this.state.records_group));
 
 				// if (jsonData) {
@@ -96,7 +96,7 @@ class view_casual_contacts extends Component {
 			<div class="">
 				<NavBar />
 				<div class="page_header">
-					<div class="page_title">View Casual Contacts</div>
+					<div class="page_title">View Existing Hotspots</div>
 				</div>
 				<div class="page_content">
 					<h2>Confirmed Case Record</h2>
@@ -107,11 +107,6 @@ class view_casual_contacts extends Component {
 						<ReactTable
 							data={records_group}
 							columns={[
-								// {
-								// 	Header: "ID",
-								// 	accessor: "_id",
-								// 	maxWidth: 50,
-								// },
 								{
 									Header: "Confirmed Case Name",
 									accessor: "visitor_and_dependent_fname",
@@ -121,13 +116,13 @@ class view_casual_contacts extends Component {
 									accessor: "visitor_and_dependent_ic_num",
 								},
 								{
-									Header: "Total Premise Checked In",
-									accessor: "check_in_count",
+									Header: "Total Hotspots",
+									accessor: "hotspot_count",
 								},
-								{
-									Header: "Total Casual Contact",
-									accessor: "casual_contact_count",
-								},
+								// {
+								// 	Header: "Total Casual Contact",
+								// 	accessor: "casual_contact_count",
+								// },
 								// {
 								// 	Header: "Day Range",
 								// 	accessor: "day_range_check_in",
@@ -145,14 +140,14 @@ class view_casual_contacts extends Component {
 									accessor: "date_created",
 								},
 								{
-									Header: "View Casual Contacts",
+									Header: "View Hotspots",
 									accessor: "_id",
 									Cell: ({ value }) => (
 										<div class="centerButton">
 											{/* <span>4 person </span> */}
 											<Link
 												to={{
-													pathname: `/view_confirmed_case_check_ins/${value}`,
+													pathname: `/view_hotspots_each/${value}`,
 												}}
 											>
 												<button class="manage_btn register btn btn-success">
@@ -168,7 +163,7 @@ class view_casual_contacts extends Component {
 									Cell: ({ value }) => (
 										<div class="centerButton">
 											<button class="manage_btn register btn btn-danger">
-												Delete
+												Delete All
 											</button>
 										</div>
 									),
@@ -203,4 +198,4 @@ class view_casual_contacts extends Component {
 	}
 }
 
-export default view_casual_contacts;
+export default view_hotspots;

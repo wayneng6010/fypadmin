@@ -24,54 +24,75 @@ class view_confirmed_case_check_ins extends Component {
 		// alert(this.props.match.params.group_record_id);
 	}
 
-	getEachPremiseName = async (confirmed_case_check_ins) => {
-		// var confirmed_case_check_ins_returned = new Array();
-		var counter = 0;
+	// getEachPremiseName = async (confirmed_case_check_ins) => {
+	// 	// var confirmed_case_check_ins_returned = new Array();
+	// 	var counter = 0;
 
-		confirmed_case_check_ins.forEach(async function (item) {
-			// alert(JSON.stringify(item.check_in_record.user_premiseowner));
-			await fetch("/getEachPremiseName", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					user_premiseowner_id: item.check_in_record.user_premiseowner,
-				}),
+	// 	confirmed_case_check_ins.forEach(async function (item) {
+	// 		// alert(JSON.stringify(item.check_in_record.user_premiseowner));
+	// 		await fetch("/getEachPremiseName", {
+	// 			method: "POST",
+	// 			headers: {
+	// 				"Content-Type": "application/json",
+	// 			},
+	// 			body: JSON.stringify({
+	// 				user_premiseowner_id: item.check_in_record.user_premiseowner,
+	// 			}),
+	// 		})
+	// 			.then((res) => {
+	// 				// console.log(JSON.stringify(res.headers));
+	// 				return res.json();
+	// 			})
+	// 			.then((jsonData) => {
+	// 				// alert(JSON.stringify(jsonData.premise_name));
+	// 				// var jsonDataReturned = jsonData;
+	// 				item.premise_name = jsonData.premise_name;
+	// 				// alert(JSON.stringify(item));
+
+	// 				// alert(JSON.stringify(item));
+	// 				// confirmed_case_check_ins_returned.push(item);
+	// 				// alert(JSON.stringify(confirmed_case_check_ins_returned));
+	// 				// this.getEachPremiseName(jsonData);
+	// 				// jsonDataReturned.forEach(function (item) {
+	// 				// item.premise_name = item.premise_name;
+	// 				// alert(JSON.stringify(item.check_in_record.user_premiseowner));
+	// 				// });
+	// 			})
+	// 			.catch((error) => {
+	// 				alert("Error: " + error);
+	// 			});
+
+	// 		counter += 1;
+
+	// 		// if (counter == confirmed_case_check_ins.length) {
+	// 		// 	// console.log("endOfLoop");
+	// 		// 	alert(JSON.stringify(confirmed_case_check_ins_returned));
+	// 		// 	this.setState({ check_in_records: confirmed_case_check_ins_returned });
+	// 		// }
+	// 	});
+	// 	// alert(JSON.stringify(this.state.check_in_records));
+	// 	// this.setState({ check_in_records: confirmed_case_check_ins_returned });
+	// };
+
+	getCasualContactCount = async (checkInRecord) => {
+		await fetch("/getCasualContactCount", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ checkInRecord }),
+		})
+			.then((res) => {
+				// console.log(JSON.stringify(res.headers));
+				return res.json();
 			})
-				.then((res) => {
-					// console.log(JSON.stringify(res.headers));
-					return res.json();
-				})
-				.then((jsonData) => {
-					// alert(JSON.stringify(jsonData.premise_name));
-					// var jsonDataReturned = jsonData;
-					item.premise_name = jsonData.premise_name;
-					// alert(JSON.stringify(item));
-
-					// alert(JSON.stringify(item));
-					// confirmed_case_check_ins_returned.push(item);
-					// alert(JSON.stringify(confirmed_case_check_ins_returned));
-					// this.getEachPremiseName(jsonData);
-					// jsonDataReturned.forEach(function (item) {
-					// item.premise_name = item.premise_name;
-					// alert(JSON.stringify(item.check_in_record.user_premiseowner));
-					// });
-				})
-				.catch((error) => {
-					alert("Error: " + error);
-				});
-
-			counter += 1;
-
-			// if (counter == confirmed_case_check_ins.length) {
-			// 	// console.log("endOfLoop");
-			// 	alert(JSON.stringify(confirmed_case_check_ins_returned));
-			// 	this.setState({ check_in_records: confirmed_case_check_ins_returned });
-			// }
-		});
-		// alert(JSON.stringify(this.state.check_in_records));
-		// this.setState({ check_in_records: confirmed_case_check_ins_returned });
+			.then((jsonData) => {
+				// alert(JSON.stringify(jsonData));
+				this.setState({ check_in_records: jsonData });
+			})
+			.catch((error) => {
+				alert("Error: " + error);
+			});
 	};
 
 	startup = async () => {
@@ -110,7 +131,6 @@ class view_confirmed_case_check_ins extends Component {
 				// alert(JSON.stringify(jsonDataReturned));
 
 				this.setState({ selected_records_group: jsonDataReturned });
-
 				// alert(JSON.stringify(this.state.records_group));
 
 				// if (jsonData) {
@@ -141,11 +161,16 @@ class view_confirmed_case_check_ins extends Component {
 				// alert(JSON.stringify(jsonData));
 				// var jsonDataReturned = jsonData;
 
-				// jsonDataReturned.forEach(function (item) {
-				// 	alert(JSON.stringify(item.check_in_record.user_premiseowner));
-				// });
+				jsonData.forEach(function (item) {
+					// alert(JSON.stringify(item.check_in_record.user_premiseowner));
+					item.check_in_record.date_created = item.check_in_record.date_created
+						.replace("T", " ")
+						.substring(0, item.check_in_record.date_created.indexOf(".") - 3);
+				});
 
-				this.setState({ check_in_records: jsonData });
+				// this.setState({ check_in_records: jsonData });
+				this.getCasualContactCount(jsonData);
+
 				// this.getEachPremiseName(jsonData);
 				// alert(JSON.stringify(this.state.check_in_records));
 				// if (jsonData) {
@@ -166,7 +191,11 @@ class view_confirmed_case_check_ins extends Component {
 	};
 
 	render() {
-		var { check_in_records, selected_records_group } = this.state;
+		var {
+			group_record_id,
+			check_in_records,
+			selected_records_group,
+		} = this.state;
 		return (
 			<div class="">
 				<NavBar />
@@ -174,31 +203,66 @@ class view_confirmed_case_check_ins extends Component {
 					<div class="page_title">View Confirmed Case Check Ins</div>
 				</div>
 				<div class="page_content">
-					<h2>Saved Confirmed Case Check In Record</h2>
+					<h2>Confirmed Case Check Ins</h2>
+					<br />
 					{selected_records_group == null ? (
-						<p></p>
+						<p>Loading...</p>
 					) : (
 						<div>
-							<p>{selected_records_group.visitor_and_dependent_fname}</p>
-							<p>{selected_records_group.visitor_and_dependent_ic_num}</p>
-							<p>
-								{"Check ins of " +
-									selected_records_group.day_range_check_in +
-									" days before"}
-							</p>
-							<p>
-								{"Check in time range before: " +
-									selected_records_group.time_range_check_in_before}
-							</p>
-							<p>
-								{"Check in time range after: " +
-									selected_records_group.time_range_check_in_after}
-							</p>
-							<p>{"Date created: " + selected_records_group.date_created}</p>
+							<div id="confirmed_case_header_outer">
+								<h5>Confirmed Case Info</h5>
+								<div id="confirmed_case_header_inner">
+									<p>{selected_records_group.visitor_and_dependent_fname}</p>
+									<p>{selected_records_group.visitor_and_dependent_ic_num}</p>
+								</div>
+							</div>
+							<div id="casual_contact_header_outer">
+								<h5>Casual Contacts Record Details</h5>
+								<div id="casual_contact_header_inner">
+									<p>
+										{"Check ins of " +
+											selected_records_group.day_range_check_in +
+											" days before"}
+									</p>
+									<p>
+										{"Check ins of " +
+											selected_records_group.time_range_check_in_before +
+											" before, " +
+											selected_records_group.time_range_check_in_after +
+											" after"}
+									</p>
+									{/* <p>
+										{"Check in time range after: " +
+											selected_records_group.time_range_check_in_after}
+									</p> */}
+									{/* <p>
+										{"Created at " + selected_records_group.date_created}
+									</p> */}
+								</div>
+							</div>
 						</div>
 					)}
+
+					{/* excel download button */}
+					{group_record_id == null ? (
+						<p>Loading...</p>
+					) : (
+						<div>
+							<Link
+								target="_blank"
+								to={{
+									pathname: `/download_excel_infected_premise/${group_record_id}`,
+								}}
+							>
+								<button class="manage_btn register btn btn-success">
+									Download Excel File
+								</button>
+							</Link>
+						</div>
+					)}
+					<br />
 					{check_in_records == null ? (
-						<p></p>
+						<p>Loading...</p>
 					) : (
 						<ReactTable
 							data={check_in_records}
@@ -206,6 +270,10 @@ class view_confirmed_case_check_ins extends Component {
 								{
 									Header: "Check In Premise",
 									accessor: "user_premiseowner.premise_name",
+								},
+								{
+									Header: "Total Casual Contact",
+									accessor: "casual_contact_count",
 								},
 								// {
 								// 	Header: "Confirmed Case IC",
@@ -233,12 +301,12 @@ class view_confirmed_case_check_ins extends Component {
 									id: "id",
 									accessor: (d) =>
 										`${d.check_in_record._id}` +
-										"," +
+										"/" +
 										`${d.saved_casual_contacts_group}`,
 
 									Cell: ({ value }) => (
 										<div>
-											<span>4 person </span>
+											{/* <span>4 person </span> */}
 											<Link
 												to={{
 													pathname: `/view_casual_contact_check_ins/${value}`,

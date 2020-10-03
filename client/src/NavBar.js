@@ -38,25 +38,29 @@ class NavBar extends Component {
 		return (
 			<div class="">
 				<div class="sidenav">
-					<p>COVID-19 Contact Tracing System</p>
-					<p>Admin Panel</p>
-					<Link
-						to={{
-							pathname: `/`,
-						}}
-					>
-						<a class="btn btn-primary btn-lg">Dashboard</a>
-					</Link>
-					<Link
-						to={{
-							pathname: `/search_casual_contacts`,
-						}}
-					>
-						<a class="btn btn-primary btn-lg">Trace Casual Contacts</a>
-					</Link>
-					<button class="dropdown-btn">
-						Casual Contacts
-						<i class="fa fa-caret-down"></i>
+					<p>
+						COVID-19 Contact
+						<br />
+						Tracing System
+					</p>
+					<div class="d-flex admin_outer">
+						<p>Admin Panel</p>
+					</div>
+
+					{/* dashboard */}
+					<div class="mx-0">
+						<Link
+							to={{
+								pathname: `/`,
+							}}
+						>
+							<a class="p-0 m-0">Dashboard</a>
+						</Link>
+					</div>
+					{/* casual contact */}
+					<button class="dropdown-btn py-2">
+						Manage Casual Contacts
+						<i class="fa fa-caret-down mr-2 mt-1"></i>
 					</button>
 					<div class="dropdown-container">
 						<Link
@@ -64,17 +68,47 @@ class NavBar extends Component {
 								pathname: `/search_casual_contacts`,
 							}}
 						>
-							<a class="btn btn-primary btn-lg">Add Casual Contacts</a>
+							<a class="">Add Casual Contacts</a>
 						</Link>
 						<Link
 							to={{
 								pathname: `/view_casual_contacts`,
 							}}
 						>
-							<a class="btn btn-primary btn-lg">View Casual Contacts</a>
+							<a class="">View Casual Contacts</a>
 						</Link>
 					</div>
-					<a href="#contact">Search</a>
+
+					{/* hotspot */}
+					<button class="dropdown-btn py-2">
+						Manage Hotspots
+						<i class="fa fa-caret-down mr-2 mt-1"></i>
+					</button>
+					<div class="dropdown-container">
+						<Link
+							to={{
+								pathname: `/add_hotspot`,
+							}}
+						>
+							<a class="">Add New Hotspot</a>
+						</Link>
+						<Link
+							to={{
+								pathname: `/view_hotspots`,
+							}}
+						>
+							<a class="">Manage Existing Hotspots</a>
+						</Link>
+						<Link
+							to={{
+								pathname: `/view_hotspots_manual_add`,
+							}}
+						>
+							<a class="">Manage Added Hotspots</a>
+						</Link>
+					</div>
+
+					{/* <a href="#contact">Search</a> */}
 				</div>
 			</div>
 		);

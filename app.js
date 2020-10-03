@@ -273,7 +273,268 @@ app.post("/getSavedCasualContactsGroups", async (req, res) => {
 	if (!savedGroups) {
 		return res.send(false);
 	}
+
+	// var counter = 0;
+	// savedGroups.forEach(async function (item) {
+	// 	const savedCheckInCount = await savedConfirmedCaseCheckIn.countDocuments({
+	// 		saved_casual_contacts_group: item._id,
+	// 	});
+	// 	item.check_in_count = savedCheckInCount;
+	// 	console.log(item.check_in_count);
+
+	// 	if (counter == savedGroups.length - 1) {
+	// 		res.send(savedGroups);
+	// 	}
+	// 	counter += 1;
+	// });
+
 	res.send(savedGroups);
+});
+
+app.post("/getCheckInCount", async (req, res) => {
+	var counter = 0;
+	var groupRecord = req.body.groupRecord;
+	groupRecord.forEach(async function (item) {
+		const savedCheckInCount = await savedConfirmedCaseCheckIn.countDocuments({
+			saved_casual_contacts_group: item._id,
+		});
+		item.check_in_count = savedCheckInCount;
+		// console.log(item.check_in_count);
+		const savedCasualContactCount = await savedCasualContactCheckIn.countDocuments(
+			{
+				saved_casual_contacts_group: item._id,
+			}
+		);
+		item.casual_contact_count = savedCasualContactCount;
+
+		if (counter == groupRecord.length - 1) {
+			res.send(groupRecord);
+		}
+		counter += 1;
+	});
+});
+
+app.post("/getCasualContactCount", async (req, res) => {
+	var counter = 0;
+	var checkInRecord = req.body.checkInRecord;
+	checkInRecord.forEach(async function (item) {
+		// console.log(item);
+		const savedCasualContactCount = await savedCasualContactCheckIn.countDocuments(
+			{
+				$and: [
+					{
+						saved_casual_contacts_group: item.saved_casual_contacts_group,
+					},
+					{ saved_confirmed_case_check_in: item.check_in_record._id },
+				],
+			}
+		);
+
+		// const savedCasualContactCount = await savedCasualContactCheckIn
+		// 	.find({
+		// 		$and: [
+		// 			{
+		// 				saved_casual_contacts_group: item.saved_casual_contacts_group,
+		// 			},
+		// 			{ saved_confirmed_case_check_in: item.check_in_record._id },
+		// 		],
+		// 	})
+		// 	.count();
+
+		item.casual_contact_count = savedCasualContactCount;
+
+		if (counter == checkInRecord.length - 1) {
+			res.send(checkInRecord);
+		}
+		counter += 1;
+	});
+});
+
+app.post("/getHotspotCount", async (req, res) => {
+	var counter = 0;
+	var groupRecord = req.body.groupRecord;
+	groupRecord.forEach(async function (item) {
+		const savedHotspotCount = await hotspot.countDocuments({
+			saved_casual_contacts_group: item._id,
+		});
+		item.hotspot_count = savedHotspotCount + " place(s)";
+
+		if (counter == groupRecord.length - 1) {
+			res.send(groupRecord);
+		}
+		counter += 1;
+	});
+});
+
+app.post("/getSavedHotspot_premise", async (req, res) => {
+	const savedHotspot = await hotspot
+		.find({
+			$and: [
+				{
+					saved_casual_contacts_group: req.body.group_record_id,
+				},
+				{ type: "premise" },
+			],
+		})
+		.populate("check_in_record")
+		.populate("user_premiseowner")
+		.exec();
+
+	if (!savedHotspot) {
+		return res.send(false);
+	}
+	res.send(savedHotspot);
+});
+
+app.post("/getSavedHotspot_home", async (req, res) => {
+	const savedHotspot = await hotspot
+		.find({
+			$and: [
+				{
+					saved_casual_contacts_group: req.body.group_record_id,
+				},
+				{ type: "residential" },
+			],
+		})
+		.populate("user_visitor")
+		.exec();
+
+	if (!savedHotspot) {
+		return res.send(false);
+	}
+	res.send(savedHotspot);
+});
+
+app.post("/getSavedHotspot_manual_added", async (req, res) => {
+	const savedHotspot = await hotspot
+		.find({
+			type: "manual_added",
+		})
+		.exec();
+
+	if (!savedHotspot) {
+		return res.send(false);
+	}
+	res.send(savedHotspot);
+});
+
+app.get("/searchLocation", (req, res) => {
+	const search_query = req.query.search_query;
+	const api_key = "key";
+	const querystr = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${search_query}&components=country:my&types=establishment&key=${api_key}`;
+	axios
+		.get(querystr)
+		.then((response) => {
+			// console.log(response.data);
+			res.send(response.data);
+		})
+		.catch((error) => {
+			res.status(400).json(error);
+		});
+});
+
+app.get("/getSearchLocation", (req, res) => {
+	const place_id = req.query.place_id;
+	const api_key = "key";
+	// const querystr = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${home_address}&key=${api_key}`;
+	const querystr = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place_id}&fields=geometry&key=${api_key}`;
+
+	axios
+		.get(querystr)
+		.then((response) => {
+			// console.log(response.data);
+			res.send(response.data);
+		})
+		.catch((error) => {
+			res.status(400).json(error);
+		});
+});
+
+app.post("/add_new_hotspot", async (req, res) => {
+	const place_id = req.body.place_id;
+	const place_lat = req.body.place_lat;
+	const place_lng = req.body.place_lng;
+	const place_name = req.body.place_name;
+	const place_state = req.body.place_state;
+	const place_address = req.body.place_address;
+	const description = req.body.description;
+	const remark = req.body.remark;
+	var now = new Date();
+	
+	const savedHotspot = new hotspot({
+		type: "manual_added",
+		place_name: place_name,
+		place_address: place_address,
+		place_state: place_state,
+		description: description,
+		remark: remark,
+		place_id: place_id,
+		place_lat: place_lat,
+		place_lng: place_lng,
+		date_created: new Date(now.getTime() + 480 * 60000),
+	});
+	try {
+		const newHotspot = await savedHotspot.save();
+		res.send("success");
+	} catch (error) {
+		res.status(400).json(error);
+	}
+});
+
+app.post("/saveNewHotspotLocation", (req, res) => {
+	const record_id = req.body.record_id;
+	const place_id = req.body.place_id;
+	const place_lat = req.body.place_lat;
+	const place_lng = req.body.place_lng;
+	console.log(record_id);
+	console.log(place_id);
+	console.log(place_lat);
+	console.log(place_lng);
+
+	hotspot.findOneAndUpdate(
+		{ _id: record_id },
+		{
+			$set: { place_id: place_id, place_lat: place_lat, place_lng: place_lng },
+		},
+		{ new: true },
+		(err, place) => {
+			if (err) return res.send("failed");
+			return res.send("success");
+		}
+	);
+});
+
+app.post("/saveHotspotDetails_manual_added", (req, res) => {
+	const record_id = req.body.record_id;
+	const place_id = req.body.place_id;
+	const place_lat = req.body.place_lat;
+	const place_lng = req.body.place_lng;
+	const place_name = req.body.place_name;
+	const place_state = req.body.place_state;
+	const place_address = req.body.place_address;
+	const description = req.body.description;
+	const remark = req.body.remark;
+
+	hotspot.findOneAndUpdate(
+		{ _id: record_id },
+		{
+			$set: {
+				place_id: place_id,
+				place_lat: place_lat,
+				place_lng: place_lng,
+				place_name: place_name,
+				place_state: place_state,
+				place_address: place_address,
+				description: description,
+				remark: remark,
+			},
+		},
+		{ new: true },
+		(err, place) => {
+			if (err) return res.send("failed");
+			return res.send("success");
+		}
+	);
 });
 
 app.post("/getSelectedSavedCasualContactsGroups", async (req, res) => {
@@ -459,6 +720,7 @@ app.post("/savedCasualContactsGroup", async (req, res) => {
 		savedHomeHotspot = new hotspot({
 			saved_casual_contacts_group: saved_group._id,
 			type: "residential",
+			user_visitor: confirmed_case_info._id,
 			place_id: confirmed_case_info.home_id,
 			place_lat: confirmed_case_info.home_lat,
 			place_lng: confirmed_case_info.home_lng,

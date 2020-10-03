@@ -28,14 +28,17 @@ class view_casual_contact_check_ins extends Component {
 		// this.state.check_in_group_id = this.props.match.params.check_in_group_id;
 		// alert("1 "+this.props.match.params.check_in_id);
 		// alert("2 " + this.props.match.params.check_in_group_id);
-		var param =
-			this.props.match.params.check_in_id +
-			this.props.match.params.check_in_group_id;
-		var param_array = param.split(",");
+		// var param =
+		// 	this.props.match.params.check_in_id +
+		// 	this.props.match.params.check_in_group_id;
+		// var param_array = param.split(",");
 		// alert(param_array[0]);
 		// alert(param_array[1]);
-		this.state.check_in_id = param_array[0];
-		this.state.check_in_group_id = param_array[1];
+		// this.state.check_in_id = param_array[0];
+		// this.state.check_in_group_id = param_array[1];
+
+		this.state.check_in_id = this.props.match.params.check_in_id;
+		this.state.check_in_group_id = this.props.match.params.check_in_group_id;
 		this.startup();
 	}
 
@@ -193,6 +196,8 @@ class view_casual_contact_check_ins extends Component {
 
 	render() {
 		var {
+			check_in_id,
+			check_in_group_id,
 			check_in_records,
 			contact_info,
 			selected_check_in_records,
@@ -254,39 +259,60 @@ class view_casual_contact_check_ins extends Component {
 					<div class="page_title">View Casual Contact Check Ins</div>
 				</div>
 				<div class="page_content">
-					<h2>Saved Casual Contact Check In Record</h2>
+					<h2>Casual Contact Check Ins</h2>
+					<br />
 					{selected_records_group == null ? (
-						<p></p>
+						<p>Loading...</p>
 					) : (
 						<div>
-							<p>{selected_records_group.visitor_and_dependent_fname}</p>
-							<p>{selected_records_group.visitor_and_dependent_ic_num}</p>
-							<p>
-								{"Check ins of " +
-									selected_records_group.day_range_check_in +
-									" days before"}
-							</p>
-							<p>
-								{"Check in time range before: " +
-									selected_records_group.time_range_check_in_before}
-							</p>
-							<p>
-								{"Check in time range after: " +
-									selected_records_group.time_range_check_in_after}
-							</p>
-							<p>{"Date created: " + selected_records_group.date_created}</p>
+							<div id="confirmed_case_header_outer">
+								<h5>Confirmed Case Info</h5>
+								<div id="confirmed_case_header_inner">
+									<p>{selected_records_group.visitor_and_dependent_fname}</p>
+									<p>{selected_records_group.visitor_and_dependent_ic_num}</p>
+								</div>
+							</div>
 						</div>
 					)}
 					{selected_check_in_records == null ? (
-						<p></p>
+						<p>Loading...</p>
 					) : (
-						<div>
-							<p>{selected_check_in_records.user_premiseowner.premise_name}</p>
-							<p>{selected_check_in_records.check_in_record.date_created}</p>
+						<div id="premise_header_outer">
+							<h5>Checked In Premise Details</h5>
+							<div id="premise_header_inner">
+								<p>
+									{selected_check_in_records.user_premiseowner.premise_name}
+								</p>
+								<p>
+									{"Confirmed case checked in at " +
+										selected_check_in_records.check_in_record.date_created}
+								</p>
+							</div>
 						</div>
 					)}
+
+					{/* excel download button */}
+					{check_in_id == null || check_in_group_id == null ? (
+						<p>Loading...</p>
+					) : (
+						<div>
+							<Link
+								target="_blank"
+								to={{
+									pathname: `/download_excel_casual_contacts/${check_in_id}/${check_in_group_id}`,
+								}}
+							>
+								<button class="manage_btn register btn btn-success">
+									Download Excel File
+								</button>
+							</Link>
+						</div>
+					)}
+
+					<br />
+
 					{check_in_records == null ? (
-						<p></p>
+						<p>Loading...</p>
 					) : (
 						<ReactTable
 							data={check_in_records}

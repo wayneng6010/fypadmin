@@ -27,6 +27,10 @@ class search_casual_contacts extends Component {
 			check_in_time_range_after_hr: 8,
 			check_in_time_range_after_min: 0,
 			ttl_contact_counts: null,
+			traceUntilDate: null,
+			traceFromDate: null,
+			casual_contact_counter: null,
+			ttl_check_ins: null,
 		};
 	}
 
@@ -296,7 +300,7 @@ class search_casual_contacts extends Component {
 					// var x = item.date_created;
 				});
 				// alert(JSON.stringify(check_in_timerange));
-				this.setState({ checked_in_premise: jsonData });
+				this.setState({ checked_in_premise: jsonData, ttl_check_ins: counter });
 				this.search_casual_contacts_dependent(ic_number, check_in_timerange);
 			})
 			.catch((error) => {
@@ -377,6 +381,10 @@ class search_casual_contacts extends Component {
 				// checked_in_premise.forEach(function (item) {
 				// 	item.date_created = new Date(item.date_created);
 				// });
+				if (jsonData == false) {
+					this.setState({ checked_in_premise: "none" });
+					return;
+				}
 				var checked_in_premise = jsonData;
 				// alert(JSON.stringify(jsonData));
 
@@ -438,7 +446,7 @@ class search_casual_contacts extends Component {
 					counter += 1;
 				});
 				// alert(JSON.stringify(checked_in_premise));
-				this.setState({ checked_in_premise: jsonData });
+				this.setState({ checked_in_premise: jsonData, ttl_check_ins: counter });
 				this.search_casual_contacts_visitor(ic_number, check_in_timerange);
 			})
 			.catch((error) => {
@@ -464,6 +472,18 @@ class search_casual_contacts extends Component {
 		var currentTime = new Date();
 		currentTime.setUTCHours(0, 0, 0, 0); // change time to midnight 00:00 of that day
 		currentTime.setDate(currentTime.getDate() - check_in_day_range);
+
+		// get today's date
+		var utc_tdy = new Date().toJSON().slice(0, 10).replace(/-/g, "/");
+		// get trace from date
+		var utc_trace_from_date = new Date();
+		utc_trace_from_date.setDate(
+			utc_trace_from_date.getDate() - check_in_day_range
+		);
+		var utc_from = utc_trace_from_date.toJSON().slice(0, 10).replace(/-/g, "/");
+		this.setState({ traceUntilDate: utc_tdy, traceFromDate: utc_from });
+		// alert(utc_tdy + utc_from);
+		// alert(this.state.traceFromDate + " " + this.state.traceUntilDate);
 
 		this.setState({
 			confirmed_case_ic_num: ic_number,
@@ -523,9 +543,11 @@ class search_casual_contacts extends Component {
 		// e.preventDefault();
 		// alert(premise_id);
 		var casual_contacts_this_premise = new Array();
+		var casual_contact_counter = 0;
 		this.state.casual_contacts_visitors.forEach(function (item) {
 			if (item.check_in_record_id === confirmed_case_check_in_id) {
 				casual_contacts_this_premise.push(item);
+				casual_contact_counter += 1;
 			}
 			// alert(JSON.stringify(casual_contacts_this_premise));
 		});
@@ -547,6 +569,7 @@ class search_casual_contacts extends Component {
 
 		this.setState({
 			casual_contacts_this_premise: casual_contacts_this_premise,
+			casual_contact_counter: casual_contact_counter,
 		});
 	};
 
@@ -616,70 +639,81 @@ class search_casual_contacts extends Component {
 			casual_contacts_this_premise,
 			confirmed_case_info,
 			ttl_contact_counts,
+			traceUntilDate,
+			traceFromDate,
+			casual_contact_counter,
+			ttl_check_ins,
 		} = this.state;
 		return (
 			<div class="">
 				<NavBar />
 				<Modal size="lg" show={this.state.modal_show} onHide={this.handleClose}>
 					<Modal.Header closeButton>
-						<Modal.Title>Modal heading</Modal.Title>
+						<Modal.Title>Casual Contacts</Modal.Title>
 					</Modal.Header>
 					<Modal.Body>
 						{casual_contacts_this_premise === null ? (
 							<p></p>
 						) : (
-							<ReactTable
-								data={casual_contacts_this_premise}
-								columns={[
-									// {
-									// 	Header: "Visitor Name",
-									// 	accessor: "user_visitor.ic_fname",
-									// },
-									{
-										Header: "Name",
-										accessor: "ic_fname_merged",
-									},
-									{
-										Header: "IC No.",
-										accessor: "ic_num_merged",
-									},
-									// {
-									// 	Header: "Visitor IC No.",
-									// 	accessor: "user_visitor.ic_num",
-									// },
-									// {
-									// 	Header: "Dependent IC No.",
-									// 	accessor: "visitor_dependent.ic_num",
-									// },
-									// {
-									// 	Header: "Phone Number",
-									// 	accessor: "user_visitor.phone_no",
-									// },
-									// {
-									// 	Header: "Email",
-									// 	accessor: "user_visitor.email",
-									// },
-									{
-										Header: "Check In Date Time",
-										accessor: "date_created_simplified",
-									},
-									// {
-									// 	Header: "View Casual Contacts",
-									// 	accessor: "user_premiseowner._id",
-									// 	Cell: ({ value }) => (
-									// 		<button
-									// 			onClick={() => {
-									// 				this.handleShow(value);
-									// 			}}
-									// 		>
-									// 			View
-									// 		</button>
-									// 	),
-									// },
-								]}
-								defaultPageSize={5}
-								className="-striped -highlight"
-							/>
+							<div>
+								<h5>
+									{"Number of casual contacts: " +
+										casual_contact_counter +
+										" person"}
+								</h5>
+								<ReactTable
+									data={casual_contacts_this_premise}
+									columns={[
+										// {
+										// 	Header: "Visitor Name",
+										// 	accessor: "user_visitor.ic_fname",
+										// },
+										{
+											Header: "Name",
+											accessor: "ic_fname_merged",
+										},
+										{
+											Header: "IC No.",
+											accessor: "ic_num_merged",
+										},
+										// {
+										// 	Header: "Visitor IC No.",
+										// 	accessor: "user_visitor.ic_num",
+										// },
+										// {
+										// 	Header: "Dependent IC No.",
+										// 	accessor: "visitor_dependent.ic_num",
+										// },
+										// {
+										// 	Header: "Phone Number",
+										// 	accessor: "user_visitor.phone_no",
+										// },
+										// {
+										// 	Header: "Email",
+										// 	accessor: "user_visitor.email",
+										// },
+										{
+											Header: "Check In Date Time",
+											accessor: "date_created_simplified",
+										},
+										// {
+										// 	Header: "View Casual Contacts",
+										// 	accessor: "user_premiseowner._id",
+										// 	Cell: ({ value }) => (
+										// 		<button
+										// 			onClick={() => {
+										// 				this.handleShow(value);
+										// 			}}
+										// 		>
+										// 			View
+										// 		</button>
+										// 	),
+										// },
+									]}
+									defaultPageSize={5}
+									className="-striped -highlight"
+								/>
+							</div>
 						)}
 					</Modal.Body>
 					<Modal.Footer>
@@ -747,6 +781,12 @@ class search_casual_contacts extends Component {
 								<option value="14" selected>
 									14 day before
 								</option>
+								<option value="15">15 day before</option>
+								<option value="16">16 day before</option>
+								<option value="17">17 day before</option>
+								<option value="18">18 day before</option>
+								<option value="19">19 day before</option>
+								<option value="20">20 day before</option>
 							</select>
 						</div>
 						{/* <br />
@@ -836,7 +876,6 @@ class search_casual_contacts extends Component {
 							<span>Minute</span>
 						</div>
 						<br />
-						<br />
 						<input
 							id="search_submit_btn"
 							class="btn btn-success"
@@ -857,6 +896,7 @@ class search_casual_contacts extends Component {
 							</div>
 						</div>
 					)}
+					{checked_in_premise === "none" ? <h5>No check in found</h5> : <p></p>}
 					{checked_in_premise === null ||
 					casual_contacts_visitors === null ||
 					ttl_contact_counts === null ? (
@@ -881,12 +921,21 @@ class search_casual_contacts extends Component {
 						// 		</button>
 						// 	</div>
 						// ))
+
 						<div class="casual_contacts_outer">
-							<h4>
+							<h5>
+								{"Traced check ins from " +
+									traceFromDate +
+									" to " +
+									traceUntilDate}
+							</h5>
+							<h5>{"Total Check Ins: " + ttl_check_ins + " premise(s)"}</h5>
+							<h5>
 								{"Total Number of Casual Contacts: " +
 									ttl_contact_counts +
 									" person"}
-							</h4>
+							</h5>
+
 							<br />
 							<ReactTable
 								data={checked_in_premise}
