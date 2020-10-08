@@ -636,15 +636,18 @@ class view_hotspots_manual_add extends Component {
 									Header: "Place Name",
 									accessor: "place_name",
 									minWidth: 200,
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								{
 									Header: "State",
 									accessor: "place_state",
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								{
 									Header: "Address",
 									accessor: "place_address",
 									minWidth: 300,
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								// {
 								// 	Header: "Description",
@@ -660,13 +663,14 @@ class view_hotspots_manual_add extends Component {
 									Header: "Date Created",
 									accessor: "date_created",
 									minWidth: 100,
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								{
 									Header: "View Hotspot Details",
 									accessor: "hotspotDetailsMerged",
 
 									Cell: ({ value }) => (
-										<div>
+										<div class="table_column">
 											<button
 												class="manage_btn register btn btn-success"
 												// disabled={this.isDisable(value)}
@@ -684,7 +688,7 @@ class view_hotspots_manual_add extends Component {
 									accessor: "_id",
 
 									Cell: ({ value }) => (
-										<div>
+										<div class="table_column">
 											<button
 												class="manage_btn register btn btn-danger"
 												// disabled={this.isDisable(value)}

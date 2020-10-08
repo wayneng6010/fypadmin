@@ -10,13 +10,16 @@ const savedCasualContactsGroup = require("./Schema").savedCasualContactsGroup;
 const savedConfirmedCaseCheckIn = require("./Schema").savedConfirmedCaseCheckIn;
 const savedCasualContactCheckIn = require("./Schema").savedCasualContactCheckIn;
 const hotspot = require("./Schema").hotspot;
-// const bcrypt = require("bcryptjs");
-// const jwt = require("jsonwebtoken");
+const staff = require("./Schema").staff;
+
+const nodemailer = require("nodemailer");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 var path = require("path");
 
 // cookie parser
-// var cookieParser = require("cookie-parser");
-// app.use(cookieParser());
+var cookieParser = require("cookie-parser");
+app.use(cookieParser());
 
 //calling API
 //localhost:5000/getArtist?artist_search=artistName
@@ -450,6 +453,189 @@ app.get("/getSearchLocation", (req, res) => {
 		});
 });
 
+// app.post("/reactivate_staff_acc", async (req, res) => {
+// 	var now = new Date();
+// 	staff.findOneAndUpdate(
+// 		{ _id: req.body.sid },
+// 		{
+// 			$set: { date_created: new Date(now.getTime() + 480 * 60000) },
+// 		},
+// 		{ new: true },
+// 		(err, place) => {
+// 			if (err) return res.send("failed");
+// 			return res.send("success");
+// 		}
+// 	);
+// });
+
+app.post("/search_staff_list", async (req, res) => {
+	var checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
+	var savedStaff;
+
+	if (checkForHexRegExp.test(req.body.search_query)) {
+		savedStaff = await staff.find({
+			$or: [
+				{ _id: req.body.search_query },
+				{ fname: { $regex: new RegExp(req.body.search_query, "i") } },
+				{ email: { $regex: req.body.search_query } },
+			],
+		});
+	} else {
+		savedStaff = await staff.find({
+			$or: [
+				{ fname: { $regex: new RegExp(req.body.search_query, "i") } },
+				{ email: { $regex: req.body.search_query } },
+			],
+		});
+	}
+
+	if (!savedStaff) {
+		return res.send(false);
+	}
+
+	res.send(savedStaff);
+});
+
+app.post("/delete_staff", (req, res) => {
+	staff
+		.deleteOne({ _id: req.body.sid })
+		.then((response) => {
+			res.send("success");
+		})
+		.catch((error) => {
+			res.send("failed");
+		});
+});
+
+app.post("/change_staff_role", async (req, res) => {
+	const savedStaff = await staff.findOne({ _id: req.body.sid });
+
+	var new_role;
+	if (savedStaff.role == 1) {
+		new_role = 0;
+	} else {
+		new_role = 1;
+	}
+
+	staff.findOneAndUpdate(
+		{ _id: req.body.sid },
+		{
+			$set: { role: new_role },
+		},
+		{ new: true },
+		(err, place) => {
+			if (err) return res.send("failed");
+			return res.send("success");
+		}
+	);
+});
+
+app.post("/get_own_profile_details", async (req, res) => {
+	const staff_id = req.cookies["sid"];
+	const savedStaff = await staff.findOne({ _id: staff_id });
+
+	if (!savedStaff) {
+		return res.send(false);
+	}
+
+	res.send(savedStaff);
+});
+
+app.post("/update_own_phone_number", async (req, res) => {
+	const staff_id = req.cookies["sid"];
+
+	staff.findOneAndUpdate(
+		{ _id: staff_id },
+		{
+			$set: { phone_no: req.body.updated_phone_no },
+		},
+		{ new: true },
+		(err, place) => {
+			if (err) return res.send("failed");
+			return res.send("success");
+		}
+	);
+});
+
+app.post("/get_all_staff", async (req, res) => {
+	const savedStaff = await staff.find();
+
+	if (!savedStaff) {
+		return res.send(false);
+	}
+
+	res.send(savedStaff);
+});
+
+app.post("/add_new_staff", async (req, res) => {
+	const fname = req.body.fname;
+	const email = req.body.email_address;
+	const role = req.body.role;
+	const random_psw = req.body.random_psw;
+	var now = new Date();
+
+	const salt = await bcrypt.genSalt(10);
+	const hashed_psw = await bcrypt.hash(random_psw, salt);
+	const savedStaff = new staff({
+		fname: fname,
+		email: email,
+		role: role,
+		password: hashed_psw,
+		first_login: true,
+		date_created: new Date(now.getTime() + 480 * 60000),
+	});
+	try {
+		const newStaff = await savedStaff.save();
+		res.send("success");
+	} catch (error) {
+		res.send("email_existed");
+		process.exit();
+	}
+
+	if (role == 1) {
+		assigned_role = "ADMIN";
+	} else if (role == 0) {
+		assigned_role = "STAFF";
+	}
+
+	var transporter = nodemailer.createTransport({
+		service: "gmail",
+		auth: {
+			user: "wayne.ng6010@gmail.com",
+			pass: "pass",
+		},
+	});
+
+	var mailOptions = {
+		from: "wayne.ng6010@gmail.com",
+		to: email,
+		subject: "COVID-19 Contact Tracing System | Staff Login Credentials",
+		html:
+			"Good day " +
+			fname +
+			",<br /><br />You are assigned with <b>" +
+			assigned_role +
+			" role</b> in COVID-19 Contact Tracing System<br /><br />" +
+			"<b><i>Login Credentials</i><br />Email: " +
+			email +
+			"<br />Temporary Password: " +
+			random_psw +
+			"</b><br /><br />You are required to <b>change your password</b> during your first login in order to activate your account." +
+			"<br />Please activate your account <b>within 3 days time</b> as the temporary password will only last for 3 days." +
+			"<br /><br />Regards, <br />COVID-19 Contact Tracing System Team",
+	};
+
+	transporter.sendMail(mailOptions, async function (error, info) {
+		if (error) {
+			// console.log(error);
+			res.send("send_email_failed");
+		} else {
+			res.send("success");
+			// console.log("Email sent: " + info.response);
+		}
+	});
+});
+
 app.post("/add_new_hotspot", async (req, res) => {
 	const place_id = req.body.place_id;
 	const place_lat = req.body.place_lat;
@@ -460,7 +646,7 @@ app.post("/add_new_hotspot", async (req, res) => {
 	const description = req.body.description;
 	const remark = req.body.remark;
 	var now = new Date();
-	
+
 	const savedHotspot = new hotspot({
 		type: "manual_added",
 		place_name: place_name,
@@ -486,10 +672,10 @@ app.post("/saveNewHotspotLocation", (req, res) => {
 	const place_id = req.body.place_id;
 	const place_lat = req.body.place_lat;
 	const place_lng = req.body.place_lng;
-	console.log(record_id);
-	console.log(place_id);
-	console.log(place_lat);
-	console.log(place_lng);
+	// console.log(record_id);
+	// console.log(place_id);
+	// console.log(place_lat);
+	// console.log(place_lng);
 
 	hotspot.findOneAndUpdate(
 		{ _id: record_id },
@@ -1032,55 +1218,198 @@ app.post("/search_casual_contacts_dependent", async (req, res) => {
 //localhost:5000/login
 app.post("/login", async (req, res) => {
 	// check if email exist
-	const user = await User.findOne({ email: req.body.user.email });
-	if (!user) {
-		return res.send(false);
+	const staff_info = await staff.findOne({ email: req.body.user.email });
+	if (!staff_info) {
+		return res.send("failed");
+	}
+
+	if (staff_info.first_login == true) {
+		var date_created = new Date(staff_info.date_created);
+		var validTime = new Date();
+
+		validTime.setDate(validTime.getDate() - 2); // get date of 2 days before
+		validTime.setUTCHours(0, 0, 0, 0); // change time to midnight 00:00 of that day
+
+		if (date_created < validTime) {
+			return res.send("failed_expired");
+		}
 	}
 
 	// check if password correct
-	const validPsw = await bcrypt.compare(req.body.user.psw, user.password);
+	const validPsw = await bcrypt.compare(req.body.user.psw, staff_info.password);
 	if (!validPsw) {
-		return res.send(false);
+		return res.send("failed");
 	}
 
 	// create and assign a token
-	const token = jwt.sign({ _id: user._id }, "vE7YWqEuJQOXjlKxU7e4SOl");
+	const token = jwt.sign({ _id: staff_info._id }, "vE7YWqEuJQOXjlKxU7e4SOl");
 
 	// save token and user id to cookie
 	res.cookie("auth-token", token); // to verify if user have login
-	res.cookie("uid", user._id); // while be used while saving artist
-	res.cookie("uname", user.name); // will be display on navigation bar (logged in as UserName)
-	res.send(true);
+	res.cookie("sid", staff_info._id); // while be used while saving artist
+	res.cookie("fname", staff_info.fname); // will be display on navigation bar (logged in as UserName)
+	res.cookie("last_login", staff_info.last_login); // will be display on navigation bar (last login)
+
+	// console.log(req.cookies["last_login"]);
+
+	if (staff_info.first_login == true) {
+		res.send("success_first_login");
+	} else {
+		res.send("success");
+	}
+});
+
+app.post("/getLoginDetails", async (req, res) => {
+	const fname = req.cookies["fname"];
+	const last_login = req.cookies["last_login"];
+
+	var login_details = new Array();
+	login_details.push({ fname: fname, last_login: last_login });
+
+	res.send(login_details);
 });
 
 app.post("/logout", async (req, res) => {
-	// clear auth-token cookie and user id cookie
-	res
-		.clearCookie("auth-token")
-		.clearCookie("uid")
-		.clearCookie("uname")
-		.send(true);
+	const staff_id = req.cookies["sid"];
+	var now = new Date();
+
+	staff.findOneAndUpdate(
+		{ _id: staff_id },
+		{
+			$set: { last_login: new Date(now.getTime() + 480 * 60000) },
+		},
+		{ new: true },
+		(err, place) => {
+			if (err) return res.send(false);
+			return res
+				.clearCookie("auth-token")
+				.clearCookie("sid")
+				.clearCookie("fname")
+				.clearCookie("last_login")
+				.send(true);
+		}
+	);
 });
 
-app.get("/verifyToken", (req, res) => {
+app.post("/verifyToken", async (req, res) => {
 	const token = req.cookies["auth-token"];
-	console.log(req.cookies["uid"]);
+	const sid = req.cookies["sid"];
+	// console.log(req.cookies["uid"]);
 
 	// if dont have the token
 	if (!token) {
-		console.log("Access Denied");
-		return res.send("Access Denied");
+		return res.send("failed");
 	}
 	try {
 		// verify token
 		const verified = jwt.verify(token, "vE7YWqEuJQOXjlKxU7e4SOl");
 		// store user ID and time of token issued to indicate that the user is authenticated
 		req.user = verified;
-		return res.send("Access Granted");
+
+		// is it first login
+		const staff_info = await staff.findOne({ _id: sid });
+		if (!staff_info) {
+			return res.send("failed");
+		}
+
+		if (staff_info.first_login == true) {
+			res.send("failed_first_login");
+		}
+
+		return res.send("success");
 	} catch (err) {
-		console.log("Invalid token");
-		return res.send("Invalid token");
+		return res.send("failed");
 	}
+});
+
+app.post("/change_psw", async (req, res) => {
+	const staff_id = req.cookies["sid"];
+
+	const staff_info = await staff.findOne({ _id: staff_id });
+	if (!staff_info) {
+		return res.send(false);
+	}
+
+	const validPsw = await bcrypt.compare(
+		req.body.user.current_psw,
+		staff_info.password
+	);
+	if (!validPsw) {
+		return res.send(false);
+	}
+
+	const samePsw = await bcrypt.compare(
+		req.body.user.new_psw,
+		staff_info.password
+	);
+	if (samePsw) {
+		return res.send(false);
+	}
+
+	const salt = await bcrypt.genSalt(10);
+	const hashed_psw = await bcrypt.hash(req.body.user.new_psw, salt);
+
+	staff.findOneAndUpdate(
+		{ _id: staff_id },
+		{
+			$set: { password: hashed_psw },
+		},
+		{ new: true },
+		(err, place) => {
+			if (err) return res.send(false);
+			return res
+				.clearCookie("auth-token")
+				.clearCookie("sid")
+				.clearCookie("fname")
+				.clearCookie("last_login")
+				.send(true);
+		}
+	);
+});
+
+app.post("/change_psw_first_login", async (req, res) => {
+	const staff_id = req.cookies["sid"];
+
+	const staff_info = await staff.findOne({ _id: staff_id });
+	if (!staff_info) {
+		return res.send(false);
+	}
+
+	const validPsw = await bcrypt.compare(
+		req.body.user.old_psw,
+		staff_info.password
+	);
+	if (!validPsw) {
+		return res.send(false);
+	}
+
+	const samePsw = await bcrypt.compare(
+		req.body.user.new_psw,
+		staff_info.password
+	);
+	if (samePsw) {
+		return res.send(false);
+	}
+
+	const salt = await bcrypt.genSalt(10);
+	const hashed_psw = await bcrypt.hash(req.body.user.new_psw, salt);
+
+	staff.findOneAndUpdate(
+		{ _id: staff_id },
+		{
+			$set: { password: hashed_psw, first_login: false },
+		},
+		{ new: true },
+		(err, place) => {
+			if (err) return res.send(false);
+			return res
+				.clearCookie("auth-token")
+				.clearCookie("sid")
+				.clearCookie("fname")
+				.clearCookie("last_login")
+				.send(true);
+		}
+	);
 });
 
 app.get("/getUserName", (req, res) => {

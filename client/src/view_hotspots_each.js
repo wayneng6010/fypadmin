@@ -455,6 +455,7 @@ class view_hotspots_each extends Component {
 								<div>
 									<div>
 										<h5>Premise Details</h5>
+										<p>{premise_details._id}</p>
 										<p>{premise_details.premise_name}</p>
 										<p>
 											{premise_details.premise_address +
@@ -621,13 +622,14 @@ class view_hotspots_each extends Component {
 									Header: "Home Address",
 									accessor: "user_visitor.ic_address",
 									minWidth: 400,
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								{
 									Header: "View Hotspot Details",
 									accessor: "hotspotDetailsMerged",
 
 									Cell: ({ value }) => (
-										<div>
+										<div class="table_column">
 											<button
 												class="manage_btn register btn btn-success"
 												// disabled={this.isDisable(value)}
@@ -645,7 +647,7 @@ class view_hotspots_each extends Component {
 									accessor: "_id",
 
 									Cell: ({ value }) => (
-										<div>
+										<div class="table_column">
 											<button
 												class="manage_btn register btn btn-danger"
 												// disabled={this.isDisable(value)}
@@ -672,10 +674,12 @@ class view_hotspots_each extends Component {
 								{
 									Header: "Check In Premise",
 									accessor: "user_premiseowner.premise_name",
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								{
 									Header: "State",
 									accessor: "user_premiseowner.premise_state",
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								// {
 								// 	Header: "Confirmed Case IC",
@@ -696,6 +700,7 @@ class view_hotspots_each extends Component {
 								{
 									Header: "Check In Date",
 									accessor: "check_in_record.date_created",
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								// {
 								// 	Header: "Date Created",
@@ -708,7 +713,7 @@ class view_hotspots_each extends Component {
 									accessor: "user_premiseowner",
 
 									Cell: ({ value }) => (
-										<div>
+										<div class="table_column">
 											<button
 												class="manage_btn register btn btn-secondary"
 												// disabled={this.isDisable(value)}
@@ -726,7 +731,7 @@ class view_hotspots_each extends Component {
 									accessor: "hotspotDetailsMerged",
 
 									Cell: ({ value }) => (
-										<div>
+										<div class="table_column">
 											<button
 												class="manage_btn register btn btn-success"
 												// disabled={this.isDisable(value)}
@@ -744,7 +749,7 @@ class view_hotspots_each extends Component {
 									accessor: "_id",
 
 									Cell: ({ value }) => (
-										<div>
+										<div class="table_column">
 											<button
 												class="manage_btn register btn btn-danger"
 												// disabled={this.isDisable(value)}

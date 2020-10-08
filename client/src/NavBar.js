@@ -38,12 +38,8 @@ class NavBar extends Component {
 		return (
 			<div class="">
 				<div class="sidenav">
-					<p>
-						COVID-19 Contact
-						<br />
-						Tracing System
-					</p>
-					<div class="d-flex admin_outer">
+					<p class="sidenav_title">COVID-19 CTS</p>
+					<div class="admin_outer">
 						<p>Admin Panel</p>
 					</div>
 
@@ -51,7 +47,7 @@ class NavBar extends Component {
 					<div class="mx-0">
 						<Link
 							to={{
-								pathname: `/`,
+								pathname: `/dashboard`,
 							}}
 						>
 							<a class="p-0 m-0">Dashboard</a>
@@ -59,7 +55,7 @@ class NavBar extends Component {
 					</div>
 					{/* casual contact */}
 					<button class="dropdown-btn py-2">
-						Manage Casual Contacts
+						Casual Contacts
 						<i class="fa fa-caret-down mr-2 mt-1"></i>
 					</button>
 					<div class="dropdown-container">
@@ -75,13 +71,13 @@ class NavBar extends Component {
 								pathname: `/view_casual_contacts`,
 							}}
 						>
-							<a class="">View Casual Contacts</a>
+							<a class="">Manage Casual Contacts</a>
 						</Link>
 					</div>
 
 					{/* hotspot */}
 					<button class="dropdown-btn py-2">
-						Manage Hotspots
+						Hotspots
 						<i class="fa fa-caret-down mr-2 mt-1"></i>
 					</button>
 					<div class="dropdown-container">
@@ -105,6 +101,50 @@ class NavBar extends Component {
 							}}
 						>
 							<a class="">Manage Added Hotspots</a>
+						</Link>
+					</div>
+
+					{/* manage staff */}
+					<button class="dropdown-btn py-2">
+						Staff
+						<i class="fa fa-caret-down mr-2 mt-1"></i>
+					</button>
+					<div class="dropdown-container">
+						<Link
+							to={{
+								pathname: `/add_staff`,
+							}}
+						>
+							<a class="">Add New Staff</a>
+						</Link>
+						<Link
+							to={{
+								pathname: `/manage_staff`,
+							}}
+						>
+							<a class="">Manage Staff</a>
+						</Link>
+					</div>
+
+					{/* my profile */}
+					<div class="mx-0">
+						<Link
+							to={{
+								pathname: `/manage_profile`,
+							}}
+						>
+							<a class="p-0 m-0">Profile</a>
+						</Link>
+					</div>
+
+					{/* logout */}
+					<div class="mx-0 logout_outer">
+						<Link
+							to={{
+								pathname: `/logout`,
+							}}
+						>
+							<a class="p-0 m-0">Logout</a>
 						</Link>
 					</div>
 

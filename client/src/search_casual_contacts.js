@@ -656,10 +656,10 @@ class search_casual_contacts extends Component {
 							<p></p>
 						) : (
 							<div>
-								<h5>
+								<h5 class="mb-3">
 									{"Number of casual contacts: " +
 										casual_contact_counter +
-										" person"}
+										" person(s)"}
 								</h5>
 								<ReactTable
 									data={casual_contacts_this_premise}
@@ -671,10 +671,12 @@ class search_casual_contacts extends Component {
 										{
 											Header: "Name",
 											accessor: "ic_fname_merged",
+											Cell: (row) => <div class="table_column">{row.value}</div>,
 										},
 										{
 											Header: "IC No.",
 											accessor: "ic_num_merged",
+											Cell: (row) => <div class="table_column">{row.value}</div>,
 										},
 										// {
 										// 	Header: "Visitor IC No.",
@@ -695,6 +697,7 @@ class search_casual_contacts extends Component {
 										{
 											Header: "Check In Date Time",
 											accessor: "date_created_simplified",
+											Cell: (row) => <div class="table_column">{row.value}</div>,
 										},
 										// {
 										// 	Header: "View Casual Contacts",
@@ -933,7 +936,7 @@ class search_casual_contacts extends Component {
 							<h5>
 								{"Total Number of Casual Contacts: " +
 									ttl_contact_counts +
-									" person"}
+									" person(s)"}
 							</h5>
 
 							<br />
@@ -943,28 +946,33 @@ class search_casual_contacts extends Component {
 									{
 										Header: "Premise Name",
 										accessor: "user_premiseowner.premise_name",
+										Cell: (row) => <div class="table_column">{row.value}</div>,
 									},
 									{
 										Header: "Check In Time",
 										accessor: "time_check_in",
+										Cell: (row) => <div class="table_column">{row.value}</div>,
 									},
 									{
 										Header: "Time Range (From)",
 										accessor: "time_from",
+										Cell: (row) => <div class="table_column">{row.value}</div>,
 									},
 									{
 										Header: "Time Range (To)",
 										accessor: "time_to",
+										Cell: (row) => <div class="table_column">{row.value}</div>,
 									},
 									{
 										Header: "Number of Contacts",
 										accessor: "casual_contact_counts",
+										Cell: (row) => <div class="table_column">{row.value + " person(s)"}</div>,
 									},
 									{
 										Header: "View Casual Contacts",
 										accessor: "_id",
 										Cell: ({ value }) => (
-											<div>
+											<div class="table_column">
 												{/* <span>4 person </span> */}
 												<button
 													class="btn btn-secondary"

@@ -4,6 +4,8 @@ import axios from "axios";
 import NavBar from "./NavBar";
 import ReactTable from "react-table-6";
 import "react-table-6/react-table.css";
+import Modal from "react-bootstrap/Modal";
+import Button from "react-bootstrap/Button";
 // link this page to another page
 import { Link } from "react-router-dom";
 
@@ -14,6 +16,7 @@ class view_confirmed_case_check_ins extends Component {
 			group_record_id: null,
 			check_in_records: null,
 			selected_records_group: null,
+			premise_details: null,
 		};
 	}
 
@@ -166,6 +169,10 @@ class view_confirmed_case_check_ins extends Component {
 					item.check_in_record.date_created = item.check_in_record.date_created
 						.replace("T", " ")
 						.substring(0, item.check_in_record.date_created.indexOf(".") - 3);
+
+					item.user_premiseowner.date_created
+						.replace("T", " ")
+						.substring(0, item.user_premiseowner.date_created.indexOf(".") - 3);
 				});
 
 				// this.setState({ check_in_records: jsonData });
@@ -186,8 +193,34 @@ class view_confirmed_case_check_ins extends Component {
 	};
 
 	isDisable = (value) => {
-		// alert(value);
-		return false;
+		var { check_in_records } = this.state;
+		value = value.split("/")[0];
+
+		var disabled = false;
+		check_in_records.forEach(function (item) {
+			// alert(value);
+			if (item.check_in_record._id == value) {
+				// alert("as");
+				if (item.casual_contact_count == 0) {
+					disabled = true;
+				}
+			}
+		});
+		// alert(disabled);
+		return disabled;
+	};
+
+	handleClose = () => {
+		this.setState({ modal_show: false });
+	};
+
+	handleShow = (premise_details) => {
+		this.setState({ modal_show: true, premise_details: premise_details });
+	};
+
+	handleCopyID = (sid) => {
+		navigator.clipboard.writeText(sid);
+		// alert("ID copied: " + sid);
 	};
 
 	render() {
@@ -195,10 +228,66 @@ class view_confirmed_case_check_ins extends Component {
 			group_record_id,
 			check_in_records,
 			selected_records_group,
+			premise_details,
 		} = this.state;
 		return (
 			<div class="">
 				<NavBar />
+				<Modal size="lg" show={this.state.modal_show} onHide={this.handleClose}>
+					<Modal.Header closeButton>
+						<Modal.Title>Contact Details</Modal.Title>
+					</Modal.Header>
+					<Modal.Body>
+						{premise_details === null ? (
+							<p></p>
+						) : (
+							<div>
+								{premise_details === null ? (
+									<p></p>
+								) : (
+									<div>
+										<div>
+											<h5>Premise Details</h5>
+											<p>{premise_details._id}</p>
+											<p>{premise_details.premise_name}</p>
+											<p>
+												{premise_details.premise_address +
+													", " +
+													premise_details.premise_postcode +
+													", " +
+													premise_details.premise_state}
+											</p>
+											<hr />
+											<h5>Owner Details</h5>
+											<p>{premise_details.owner_fname}</p>
+											<p>{premise_details.phone_no}</p>
+											<img
+												width="150"
+												src={`https://qrcode.tec-it.com/API/QRCode?data=tel%3a${premise_details.phone_no}`}
+											/>
+											<br />
+											<br />
+											<a
+												href={"mailto:" + premise_details.email}
+												target="_blank"
+											>
+												{premise_details.email}
+											</a>
+										</div>
+									</div>
+								)}
+							</div>
+						)}
+					</Modal.Body>
+					<Modal.Footer>
+						<Button variant="secondary" onClick={this.handleClose}>
+							Close
+						</Button>
+						{/* <Button variant="primary" onClick={this.handleClose}>
+							Save Changes
+						</Button> */}
+					</Modal.Footer>
+				</Modal>
 				<div class="page_header">
 					<div class="page_title">View Confirmed Case Check Ins</div>
 				</div>
@@ -268,12 +357,44 @@ class view_confirmed_case_check_ins extends Component {
 							data={check_in_records}
 							columns={[
 								{
+									Header: "Premise ID",
+									accessor: "user_premiseowner._id",
+									width: 120,
+									Cell: (row) => (
+										<div class="table_column">
+											{"..." +
+												row.value.slice(row.value.length - 4).toUpperCase() +
+												" "}
+											<img
+												src="https://www.flaticon.com/svg/static/icons/svg/60/60990.svg"
+												width={17}
+												title="Copy full ID"
+												class="copy_id_icon"
+												onClick={() => {
+													this.handleCopyID(row.value);
+												}}
+											/>
+										</div>
+									),
+								},
+								{
 									Header: "Check In Premise",
 									accessor: "user_premiseowner.premise_name",
+									Cell: (row) => <div class="table_column">{row.value}</div>,
+								},
+								{
+									Header: "Premise State",
+									accessor: "user_premiseowner.premise_state",
+									width: 170,
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								{
 									Header: "Total Casual Contact",
 									accessor: "casual_contact_count",
+									width: 150,
+									Cell: (row) => (
+										<div class="table_column">{row.value + " person(s)"}</div>
+									),
 								},
 								// {
 								// 	Header: "Confirmed Case IC",
@@ -294,18 +415,39 @@ class view_confirmed_case_check_ins extends Component {
 								{
 									Header: "Check In Date",
 									accessor: "check_in_record.date_created",
+									width: 200,
+									Cell: (row) => <div class="table_column">{row.value}</div>,
+								},
+								{
+									Header: "Premise Details",
+									accessor: "user_premiseowner",
+									width: 250,
+									Cell: ({ value }) => (
+										<div class="table_column">
+											<button
+												class="btn btn-secondary"
+												variant="secondary"
+												onClick={() => {
+													this.handleShow(value);
+												}}
+											>
+												View Premise Details
+											</button>
+										</div>
+									),
 								},
 								{
 									Header: "View Casual Contacts",
 									// accessor: "check_in_record._id",
 									id: "id",
+									width: 250,
 									accessor: (d) =>
 										`${d.check_in_record._id}` +
 										"/" +
 										`${d.saved_casual_contacts_group}`,
 
 									Cell: ({ value }) => (
-										<div>
+										<div class="table_column">
 											{/* <span>4 person </span> */}
 											<Link
 												to={{
@@ -316,7 +458,7 @@ class view_confirmed_case_check_ins extends Component {
 													class="manage_btn register btn btn-success"
 													disabled={this.isDisable(value)}
 												>
-													View
+													View Casual Contacts
 												</button>
 											</Link>
 										</div>

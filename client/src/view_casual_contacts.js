@@ -90,6 +90,11 @@ class view_casual_contacts extends Component {
 			});
 	};
 
+	handleCopyID = (sid) => {
+		navigator.clipboard.writeText(sid);
+		// alert("ID copied: " + sid);
+	};
+
 	render() {
 		var { records_group } = this.state;
 		return (
@@ -107,26 +112,49 @@ class view_casual_contacts extends Component {
 						<ReactTable
 							data={records_group}
 							columns={[
-								// {
-								// 	Header: "ID",
-								// 	accessor: "_id",
-								// 	maxWidth: 50,
-								// },
+								{
+									Header: "ID",
+									accessor: "_id",
+									width: 120,
+									Cell: (row) => (
+										<div class="table_column">
+											{"..." +
+												row.value.slice(row.value.length - 4).toUpperCase() +
+												" "}
+											<img
+												src="https://www.flaticon.com/svg/static/icons/svg/60/60990.svg"
+												width={17}
+												title="Copy full ID"
+												class="copy_id_icon"
+												onClick={() => {
+													this.handleCopyID(row.value);
+												}}
+											/>
+										</div>
+									),
+								},
 								{
 									Header: "Confirmed Case Name",
 									accessor: "visitor_and_dependent_fname",
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								{
 									Header: "Confirmed Case IC",
 									accessor: "visitor_and_dependent_ic_num",
+									width: 300,
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								{
 									Header: "Total Premise Checked In",
 									accessor: "check_in_count",
+									width: 150,
+									Cell: (row) => <div class="table_column">{row.value + " person(s)"}</div>,
 								},
 								{
 									Header: "Total Casual Contact",
 									accessor: "casual_contact_count",
+									width: 150,
+									Cell: (row) => <div class="table_column">{row.value + " person(s)"}</div>,
 								},
 								// {
 								// 	Header: "Day Range",
@@ -143,12 +171,15 @@ class view_casual_contacts extends Component {
 								{
 									Header: "Date Created",
 									accessor: "date_created",
+									width: 200,
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								{
-									Header: "View Casual Contacts",
+									Header: "View Checked In Premise",
 									accessor: "_id",
+									width: 200,
 									Cell: ({ value }) => (
-										<div class="centerButton">
+										<div class="table_column">
 											{/* <span>4 person </span> */}
 											<Link
 												to={{
@@ -165,8 +196,9 @@ class view_casual_contacts extends Component {
 								{
 									Header: "Delete",
 									accessor: "_id",
+									width: 200,
 									Cell: ({ value }) => (
-										<div class="centerButton">
+										<div class="table_column">
 											<button class="manage_btn register btn btn-danger">
 												Delete
 											</button>

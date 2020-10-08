@@ -138,8 +138,9 @@ class view_casual_contact_check_ins extends Component {
 				jsonDataReturned.forEach(function (item) {
 					if (item.hasOwnProperty("visitor_dependent")) {
 						item["ic_num_merged"] = item.visitor_dependent.ic_num;
+						item["role"] = "Dependent";
 						item["ic_fname_merged"] =
-							item.visitor_dependent.ic_fname + " (Dependent)";
+							item.visitor_dependent.ic_fname;
 						item["contact_info_merged"] = {
 							visitor_fname: item.user_visitor.ic_fname,
 							visitor_ic_num: item.user_visitor.ic_num,
@@ -151,6 +152,7 @@ class view_casual_contact_check_ins extends Component {
 						};
 					} else if (item.hasOwnProperty("user_visitor")) {
 						item["ic_num_merged"] = item.user_visitor.ic_num;
+						item["role"] = "Visitor";
 						item["ic_fname_merged"] = item.user_visitor.ic_fname;
 						item["contact_info_merged"] = {
 							visitor_fname: item.user_visitor.ic_fname,
@@ -241,7 +243,12 @@ class view_casual_contact_check_ins extends Component {
 								/>
 								<br />
 								<br />
-								<p>{contact_info.visitor_email}</p>
+								<a
+									href={"mailto:" + contact_info.visitor_email}
+									target="_blank"
+								>
+									{contact_info.visitor_email}
+								</a>
 								<p>{contact_info.visitor_ic_address}</p>
 							</div>
 						)}
@@ -320,10 +327,17 @@ class view_casual_contact_check_ins extends Component {
 								{
 									Header: "Name",
 									accessor: "ic_fname_merged",
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								{
 									Header: "IC",
 									accessor: "ic_num_merged",
+									Cell: (row) => <div class="table_column">{row.value}</div>,
+								},
+								{
+									Header: "Role",
+									accessor: "role",
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								// {
 								// 	Header: "Visitor Name",
@@ -356,13 +370,14 @@ class view_casual_contact_check_ins extends Component {
 								{
 									Header: "Check In Date",
 									accessor: "check_in_record.date_created",
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								{
 									Header: "Contact Details",
 									accessor: "contact_info_merged",
 
 									Cell: ({ value }) => (
-										<div>
+										<div class="table_column">
 											<button
 												class="btn btn-secondary"
 												variant="secondary"

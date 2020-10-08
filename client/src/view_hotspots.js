@@ -90,6 +90,11 @@ class view_hotspots extends Component {
 			});
 	};
 
+	handleCopyID = (sid) => {
+		navigator.clipboard.writeText(sid);
+		// alert("ID copied: " + sid);
+	};
+
 	render() {
 		var { records_group } = this.state;
 		return (
@@ -108,16 +113,40 @@ class view_hotspots extends Component {
 							data={records_group}
 							columns={[
 								{
+									Header: "ID",
+									accessor: "_id",
+									width: 120,
+									Cell: (row) => (
+										<div class="table_column">
+											{"..." +
+												row.value.slice(row.value.length - 4).toUpperCase() +
+												" "}
+											<img
+												src="https://www.flaticon.com/svg/static/icons/svg/60/60990.svg"
+												width={17}
+												title="Copy full ID"
+												class="copy_id_icon"
+												onClick={() => {
+													this.handleCopyID(row.value);
+												}}
+											/>
+										</div>
+									),
+								},
+								{
 									Header: "Confirmed Case Name",
 									accessor: "visitor_and_dependent_fname",
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								{
 									Header: "Confirmed Case IC",
 									accessor: "visitor_and_dependent_ic_num",
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								{
 									Header: "Total Hotspots",
 									accessor: "hotspot_count",
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								// {
 								// 	Header: "Total Casual Contact",
@@ -138,12 +167,13 @@ class view_hotspots extends Component {
 								{
 									Header: "Date Created",
 									accessor: "date_created",
+									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								{
 									Header: "View Hotspots",
 									accessor: "_id",
 									Cell: ({ value }) => (
-										<div class="centerButton">
+										<div class="table_column">
 											{/* <span>4 person </span> */}
 											<Link
 												to={{
@@ -161,7 +191,7 @@ class view_hotspots extends Component {
 									Header: "Delete",
 									accessor: "_id",
 									Cell: ({ value }) => (
-										<div class="centerButton">
+										<div class="table_column">
 											<button class="manage_btn register btn btn-danger">
 												Delete All
 											</button>

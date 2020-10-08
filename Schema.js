@@ -180,17 +180,29 @@ const hotspotSchema = new mongoose.Schema({
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "user_visitor",
 	},
-	place_name: { type: String, required: true },
-	place_address: { type: String, required: true },
-	place_state: { type: String, required: true },
-	description: { type: String, required: true },
-	remark: { type: String, required: true },
+	place_name: { type: String },
+	place_address: { type: String },
+	place_state: { type: String },
+	description: { type: String },
+	remark: { type: String },
 	type: { type: String, required: true },
 	place_id: { type: String, required: true },
 	place_lat: { type: String, required: true },
 	place_lng: { type: String, required: true },
 	// date_end: { type: Date },
 	date_created: { type: Date },
+});
+
+// staff
+const staffSchema = new mongoose.Schema({
+	fname: { type: String, required: true },
+	email: { type: String, unique: true, index: true, required: true },
+	role: { type: Number, required: true },
+	password: { type: String, required: true },
+	phone_no: { type: String },
+	first_login: { type: Boolean, required: true },
+	last_login: { type: Date },
+	date_created: { type: Date, required: true },
 });
 
 if (process.env.NODE_ENV === "production") {
@@ -225,6 +237,7 @@ const savedCasualContactCheckIn = mongoose.model(
 	savedCasualContactCheckInSchema
 );
 const hotspot = mongoose.model("hotspot", hotspotSchema);
+const staff = mongoose.model("staff", staffSchema);
 
 module.exports.userVisitor = userVisitor;
 module.exports.userPremiseOwner = userPremiseOwner;
@@ -235,3 +248,4 @@ module.exports.savedCasualContactsGroup = savedCasualContactsGroup;
 module.exports.savedConfirmedCaseCheckIn = savedConfirmedCaseCheckIn;
 module.exports.savedCasualContactCheckIn = savedCasualContactCheckIn;
 module.exports.hotspot = hotspot;
+module.exports.staff = staff;
