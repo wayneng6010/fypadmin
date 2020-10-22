@@ -111,10 +111,14 @@ const savedCasualContactsGroupSchema = new mongoose.Schema({
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "visitor_dependent",
 	},
+	staff: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "staff",
+	},
 	day_range_check_in: { type: String, required: true },
 	time_range_check_in_before: { type: String, required: true },
 	time_range_check_in_after: { type: String, required: true },
-	completed: { type: Boolean, required: true },
+	// completed: { type: Boolean, required: true },
 	date_created: { type: Date },
 });
 
@@ -132,7 +136,7 @@ const savedConfirmedCaseCheckInSchema = new mongoose.Schema({
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "user_premiseowner",
 	},
-	completed: { type: Boolean, required: true },
+	// completed: { type: Boolean, required: true },
 	date_created: { type: Date },
 });
 
@@ -158,7 +162,7 @@ const savedCasualContactCheckInSchema = new mongoose.Schema({
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "visitor_dependent",
 	},
-	completed: { type: Boolean, required: true },
+	// completed: { type: Boolean, required: true },
 	date_created: { type: Date },
 });
 
@@ -205,6 +209,21 @@ const staffSchema = new mongoose.Schema({
 	date_created: { type: Date, required: true },
 });
 
+// health risk assessment record schema
+const healthRiskAssessmentRecordSchema = new mongoose.Schema({
+	user_visitor: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "user_visitor",
+	},
+	visitor_dependent: {
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "visitor_dependent",
+	},
+	responses: { type: Array, required: true },
+	result: { type: Boolean, required: true },
+	date_created: { type: Date },
+});
+
 if (process.env.NODE_ENV === "production") {
 	app.use(express.static("client/build"));
 
@@ -238,6 +257,10 @@ const savedCasualContactCheckIn = mongoose.model(
 );
 const hotspot = mongoose.model("hotspot", hotspotSchema);
 const staff = mongoose.model("staff", staffSchema);
+const healthRiskAssessmentRecord = mongoose.model(
+	"health_risk_assessment_record",
+	healthRiskAssessmentRecordSchema
+);
 
 module.exports.userVisitor = userVisitor;
 module.exports.userPremiseOwner = userPremiseOwner;
@@ -249,3 +272,4 @@ module.exports.savedConfirmedCaseCheckIn = savedConfirmedCaseCheckIn;
 module.exports.savedCasualContactCheckIn = savedCasualContactCheckIn;
 module.exports.hotspot = hotspot;
 module.exports.staff = staff;
+module.exports.healthRiskAssessmentRecord = healthRiskAssessmentRecord;

@@ -17,10 +17,12 @@ import add_hotspot from "./add_hotspot";
 import view_hotspots from "./view_hotspots";
 import view_hotspots_each from "./view_hotspots_each";
 import view_hotspots_manual_add from "./view_hotspots_manual_add";
+import send_batch_email from "./send_batch_email";
 import add_staff from "./add_staff";
 import manage_staff from "./manage_staff";
 import manage_profile from "./manage_profile";
 import logout from "./logout";
+import health_risk_assessment_analytics from "./health_risk_assessment_analytics";
 
 const Router = () => (
 	<BrowserRouter>
@@ -78,6 +80,12 @@ const Router = () => (
 				component={view_hotspots_manual_add}
 			/>
 
+			{/* batch email */}
+			<Route path="/send_batch_email" component={send_batch_email} exact />
+
+			{/* health risk assessment analytics */}
+			<Route path="/health_risk_assessment_analytics" component={health_risk_assessment_analytics} exact />
+			
 			{/* staff */}
 			<Route path="/add_staff" component={add_staff} exact />
 			<Route path="/manage_staff" component={manage_staff} exact />

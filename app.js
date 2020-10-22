@@ -11,6 +11,8 @@ const savedConfirmedCaseCheckIn = require("./Schema").savedConfirmedCaseCheckIn;
 const savedCasualContactCheckIn = require("./Schema").savedCasualContactCheckIn;
 const hotspot = require("./Schema").hotspot;
 const staff = require("./Schema").staff;
+const healthRiskAssessmentRecord = require("./Schema")
+	.healthRiskAssessmentRecord;
 
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
@@ -266,11 +268,31 @@ app.post("/testing", async (req, res) => {
 	// }
 });
 
+app.post("/search_confirmed_case_by_id", async (req, res) => {
+	var checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
+
+	if (checkForHexRegExp.test(req.body.group_id)) {
+		const savedGroups = await savedCasualContactsGroup
+			.findOne({ _id: req.body.group_id })
+			.populate("confirmed_case_visitor")
+			.populate("confirmed_case_dependent")
+			.exec();
+		if (!savedGroups) {
+			return res.send(false);
+		} else {
+			return res.send(savedGroups);
+		}
+	} else {
+		return res.send(false);
+	}
+});
+
 app.post("/getSavedCasualContactsGroups", async (req, res) => {
 	const savedGroups = await savedCasualContactsGroup
 		.find()
 		.populate("confirmed_case_visitor")
 		.populate("confirmed_case_dependent")
+		.populate("staff")
 		.exec();
 
 	if (!savedGroups) {
@@ -292,6 +314,150 @@ app.post("/getSavedCasualContactsGroups", async (req, res) => {
 	// });
 
 	res.send(savedGroups);
+});
+
+app.post("/get_hra_responses_count", async (req, res) => {
+	var counter = 0;
+	// var groupRecord = req.body.groupRecord;
+	const savedHRARecord = await healthRiskAssessmentRecord.find();
+
+	var response_count = {
+		yes: new Array(0, 0, 0, 0, 0),
+		no: new Array(0, 0, 0, 0, 0),
+	};
+	savedHRARecord.forEach(async function (item) {
+		if (item.responses[0]) {
+			response_count.yes[0] += 1;
+		} else {
+			response_count.no[0] += 1;
+		}
+
+		if (item.responses[1]) {
+			response_count.yes[1] += 1;
+		} else {
+			response_count.no[1] += 1;
+		}
+
+		if (item.responses[2]) {
+			response_count.yes[2] += 1;
+		} else {
+			response_count.no[2] += 1;
+		}
+
+		if (item.responses[3]) {
+			response_count.yes[3] += 1;
+		} else {
+			response_count.no[3] += 1;
+		}
+
+		if (item.responses[4]) {
+			response_count.yes[4] += 1;
+		} else {
+			response_count.no[4] += 1;
+		}
+
+		if (counter == savedHRARecord.length - 1) {
+			res.send(response_count);
+		}
+		counter += 1;
+	});
+});
+
+app.post("/get_hra_results_count", async (req, res) => {
+	var counter = 0;
+	// var groupRecord = req.body.groupRecord;
+	const savedHRARecord = await healthRiskAssessmentRecord.find();
+
+	var result_count = new Array(0, 0);
+	savedHRARecord.forEach(async function (item) {
+		if (item.result) {
+			result_count[0] += 1;
+		} else {
+			result_count[1] += 1;
+		}
+
+		if (counter == savedHRARecord.length - 1) {
+			res.send(result_count);
+		}
+		counter += 1;
+	});
+});
+
+app.post("/get_hra_gender_count", async (req, res) => {
+	var counter = 0;
+	// var groupRecord = req.body.groupRecord;
+	const savedHRARecord = await healthRiskAssessmentRecord
+		.find()
+		.populate("user_visitor", "ic_num")
+		.populate("visitor_dependent", "ic_num")
+		.exec();
+
+	var gender_count = new Array(0, 0);
+	var ic_num, ic_lastChar;
+	savedHRARecord.forEach(async function (item) {
+		if (item.visitor_dependent !== undefined) {
+			ic_num = item.visitor_dependent.ic_num;
+		} else {
+			ic_num = item.user_visitor.ic_num;
+		}
+		ic_lastChar = ic_num.slice(ic_num.length - 1);
+
+		if (ic_lastChar % 2 == 0) {
+			gender_count[1] += 1;
+		} else {
+			gender_count[0] += 1;
+		}
+
+		if (counter == savedHRARecord.length - 1) {
+			res.send(gender_count);
+		}
+		counter += 1;
+	});
+});
+
+app.post("/get_hra_age_count", async (req, res) => {
+	var counter = 0;
+	// var groupRecord = req.body.groupRecord;
+	const savedHRARecord = await healthRiskAssessmentRecord
+		.find()
+		.populate("user_visitor", "ic_num")
+		.populate("visitor_dependent", "ic_num")
+		.exec();
+
+	var age_count = new Array(0, 0, 0, 0);
+	var ic_num, ic_firstTwoChar, birth_year, age;
+	var d = new Date();
+	var this_year = d.getFullYear();
+
+	savedHRARecord.forEach(async function (item) {
+		if (item.visitor_dependent !== undefined) {
+			ic_num = item.visitor_dependent.ic_num;
+		} else {
+			ic_num = item.user_visitor.ic_num;
+		}
+		ic_firstTwoChar = ic_num.substring(0, 2);
+		if (ic_firstTwoChar < parseInt(this_year.toString().substring(2, 4))) {
+			birth_year = 2000 + parseInt(ic_firstTwoChar);
+		} else {
+			birth_year = 1900 + parseInt(ic_firstTwoChar);
+		}
+
+		age = this_year - birth_year;
+
+		if (age <= 14) {
+			age_count[0] += 1;
+		} else if (age <= 24) {
+			age_count[1] += 1;
+		} else if (age <= 64) {
+			age_count[2] += 1;
+		} else if (age > 64) {
+			age_count[3] += 1;
+		}
+		if (counter == savedHRARecord.length - 1) {
+			res.send(age_count);
+		}
+		counter += 1;
+	});
 });
 
 app.post("/getCheckInCount", async (req, res) => {
@@ -360,7 +526,7 @@ app.post("/getHotspotCount", async (req, res) => {
 		const savedHotspotCount = await hotspot.countDocuments({
 			saved_casual_contacts_group: item._id,
 		});
-		item.hotspot_count = savedHotspotCount + " place(s)";
+		item.hotspot_count = savedHotspotCount;
 
 		if (counter == groupRecord.length - 1) {
 			res.send(groupRecord);
@@ -423,7 +589,7 @@ app.post("/getSavedHotspot_manual_added", async (req, res) => {
 
 app.get("/searchLocation", (req, res) => {
 	const search_query = req.query.search_query;
-	const api_key = "key";
+	const api_key = "api_key";
 	const querystr = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${search_query}&components=country:my&types=establishment&key=${api_key}`;
 	axios
 		.get(querystr)
@@ -438,7 +604,7 @@ app.get("/searchLocation", (req, res) => {
 
 app.get("/getSearchLocation", (req, res) => {
 	const place_id = req.query.place_id;
-	const api_key = "key";
+	const api_key = "api_key";
 	// const querystr = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${home_address}&key=${api_key}`;
 	const querystr = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place_id}&fields=geometry&key=${api_key}`;
 
@@ -567,6 +733,58 @@ app.post("/get_all_staff", async (req, res) => {
 	res.send(savedStaff);
 });
 
+app.post("/send_batch_email", async (req, res) => {
+	const savedCasualContact = await savedCasualContactCheckIn
+		.find({
+			saved_casual_contacts_group: req.body.group_id,
+		})
+		.populate("user_visitor", "email")
+		.exec();
+
+	var email_list_arr = new Array();
+	savedCasualContact.forEach(async function (item) {
+		// console.log(item.user_visitor.email);
+		email_list_arr.push(item.user_visitor.email);
+	});
+	var email_list = email_list_arr.join();
+
+	var transporter = nodemailer.createTransport({
+		service: "gmail",
+		auth: {
+			user: "wayne.ng6010@gmail.com",
+			pass: "ozuueiwutugbeakc",
+		},
+	});
+
+	// const email =
+	// 	"p19011719@student.newinti.edu.my, wayne.ng6010@gmail.com, p19011719@student.newinti.edu.my";
+
+	var mailOptions = {
+		from: "wayne.ng6010@gmail.com",
+		// to: email,
+		subject: req.body.email_subject,
+		html: req.body.email_content
+			.split("\n")
+			.join("<br>")
+			.split(" ")
+			.join("&nbsp;"),
+		envelope: {
+			from: "wayne.ng6010@gmail.com",
+			to: email_list,
+		},
+	};
+
+	transporter.sendMail(mailOptions, async function (error, info) {
+		if (error) {
+			// console.log(error);
+			res.send("send_email_failed");
+		} else {
+			res.send("success");
+			// console.log("Email sent: " + info.response);
+		}
+	});
+});
+
 app.post("/add_new_staff", async (req, res) => {
 	const fname = req.body.fname;
 	const email = req.body.email_address;
@@ -586,7 +804,7 @@ app.post("/add_new_staff", async (req, res) => {
 	});
 	try {
 		const newStaff = await savedStaff.save();
-		res.send("success");
+		// res.send("success");
 	} catch (error) {
 		res.send("email_existed");
 		process.exit();
@@ -602,7 +820,7 @@ app.post("/add_new_staff", async (req, res) => {
 		service: "gmail",
 		auth: {
 			user: "wayne.ng6010@gmail.com",
-			pass: "pass",
+			pass: "ozuueiwutugbeakc",
 		},
 	});
 
@@ -785,7 +1003,7 @@ app.post("/getSelectedConfirmedCaseCheckIns", async (req, res) => {
 });
 
 app.post("/getCasualContactCheckIns", async (req, res) => {
-	console.log(req.body.check_in_id);
+	// console.log(req.body.check_in_id);
 	const savedCheckIns = await savedCasualContactCheckIn
 		// .find({ saved_confirmed_case_check_in: req.body.check_in_id })
 		.find({
@@ -796,7 +1014,13 @@ app.post("/getCasualContactCheckIns", async (req, res) => {
 				{ saved_casual_contacts_group: req.body.check_in_group_id },
 			],
 		})
-		.populate("check_in_record")
+		.populate({
+			path: "check_in_record",
+			populate: {
+				path: "premise_qr_code",
+				select: "entry_point",
+			},
+		})
 		.populate("user_visitor")
 		.populate("visitor_dependent")
 		.exec();
@@ -808,7 +1032,7 @@ app.post("/getCasualContactCheckIns", async (req, res) => {
 });
 
 app.post("/getSimpCasualContactCheckIns", async (req, res) => {
-	console.log(req.body.check_in_id);
+	// console.log(req.body.check_in_id);
 	const savedCheckIns = await savedCasualContactCheckIn
 		// .find({ saved_confirmed_case_check_in: req.body.check_in_id })
 		.find({
@@ -825,23 +1049,86 @@ app.post("/getSimpCasualContactCheckIns", async (req, res) => {
 	res.send(savedCheckIns);
 });
 
+app.post("/delete_one_hotspot_record", (req, res) => {
+	hotspot
+		.deleteOne({ _id: req.body.record_id })
+		.then((response) => {
+			res.send("success");
+		})
+		.catch((error) => {
+			res.send("failed");
+		});
+});
+
+app.post("/delete_all_hotspot_record", (req, res) => {
+	hotspot
+		.deleteMany({ saved_casual_contacts_group: req.body.record_id })
+		.then((response) => {
+			res.send("success");
+		})
+		.catch((error) => {
+			res.send("failed");
+		});
+});
+
+app.post("/delete_saved_casual_contact_records", (req, res) => {
+	savedCasualContactsGroup
+		.deleteMany({ _id: req.body.record_id })
+		.then((response) => {
+			// res.send("success");
+		})
+		.catch((error) => {
+			res.send("failed");
+		});
+
+	savedConfirmedCaseCheckIn
+		.deleteMany({ saved_casual_contacts_group: req.body.record_id })
+		.then((response) => {
+			// res.send("success");
+		})
+		.catch((error) => {
+			res.send("failed");
+		});
+
+	savedCasualContactCheckIn
+		.deleteMany({ saved_casual_contacts_group: req.body.record_id })
+		.then((response) => {
+			// res.send("success");
+		})
+		.catch((error) => {
+			res.send("failed");
+		});
+
+	hotspot
+		.deleteMany({ saved_casual_contacts_group: req.body.record_id })
+		.then((response) => {
+			res.send("success");
+		})
+		.catch((error) => {
+			res.send("failed");
+		});
+});
+
 app.post("/savedCasualContactsGroup", async (req, res) => {
-	console.log(req.body.confirmed_case_id);
-	console.log(req.body.confirmed_case_user_type);
-	console.log(req.body.check_in_day_range);
-	console.log(req.body.check_in_time_range_before);
-	console.log(req.body.check_in_time_range_after);
-	console.log(req.body.checked_in_premise);
-	console.log(req.body.casual_contacts_visitors);
+	// console.log(req.body.confirmed_case_id);
+	// console.log(req.body.confirmed_case_user_type);
+	// console.log(req.body.check_in_day_range);
+	// console.log(req.body.check_in_time_range_before);
+	// console.log(req.body.check_in_time_range_after);
+	// console.log(req.body.checked_in_premise);
+	// console.log(req.body.casual_contacts_visitors);
+	const staff_id = req.cookies["sid"];
+	// console.log(staff_id);
 	var now = new Date();
 	var savedGroup, confirmed_case_info;
 	if (req.body.confirmed_case_user_type == "Visitor") {
 		savedGroup = new savedCasualContactsGroup({
 			confirmed_case_visitor: req.body.confirmed_case_id,
+			staff: staff_id,
 			day_range_check_in: req.body.check_in_day_range,
 			time_range_check_in_before: req.body.check_in_time_range_before,
 			time_range_check_in_after: req.body.check_in_time_range_after,
-			completed: false,
+			// completed: false,
 			date_created: new Date(now.getTime() + 480 * 60000),
 		});
 		confirmed_case_info = await userVisitor.findOne({
@@ -850,10 +1137,11 @@ app.post("/savedCasualContactsGroup", async (req, res) => {
 	} else if (req.body.confirmed_case_user_type == "Dependent") {
 		savedGroup = new savedCasualContactsGroup({
 			confirmed_case_dependent: req.body.confirmed_case_id,
+			staff: staff_id,
 			day_range_check_in: req.body.check_in_day_range,
 			time_range_check_in_before: req.body.check_in_time_range_before,
 			time_range_check_in_after: req.body.check_in_time_range_after,
-			completed: false,
+			// completed: false,
 			date_created: new Date(now.getTime() + 480 * 60000),
 		});
 		const dependent = await visitorDependent.findOne({
@@ -867,19 +1155,19 @@ app.post("/savedCasualContactsGroup", async (req, res) => {
 	try {
 		var saved_group = await savedGroup.save();
 		req.body.checked_in_premise.forEach(async function (item) {
-			console.log(item._id);
+			// console.log(item._id);
 			savedCheckIn = new savedConfirmedCaseCheckIn({
 				saved_casual_contacts_group: saved_group._id,
 				check_in_record: item._id,
 				user_premiseowner: item.user_premiseowner._id,
-				completed: false,
+				// completed: false,
 				date_created: new Date(now.getTime() + 480 * 60000),
 			});
 			await savedCheckIn.save();
 		});
 
 		req.body.casual_contacts_visitors.forEach(async function (item) {
-			console.log(item);
+			// console.log(item);
 			if (item.visitor_dependent !== undefined) {
 				saved_casual_contact_check_in = new savedCasualContactCheckIn({
 					saved_casual_contacts_group: saved_group._id,
@@ -915,7 +1203,7 @@ app.post("/savedCasualContactsGroup", async (req, res) => {
 		await savedHomeHotspot.save();
 
 		req.body.checked_in_premise.forEach(async function (item) {
-			console.log(item._id);
+			// console.log(item._id);
 			savedHotspot = new hotspot({
 				saved_casual_contacts_group: saved_group._id,
 				type: "premise",
@@ -1059,9 +1347,9 @@ app.post("/search_casual_contacts_visitor", async (req, res) => {
 		// return res.send(true);
 		var confirmed_visitor_id = confirmed_visitor._id;
 		var counter = 0;
-		console.log(JSON.stringify(req.body.check_in_timerange));
+		// console.log(JSON.stringify(req.body.check_in_timerange));
 		req.body.check_in_timerange.forEach(async function (item) {
-			// console.log(item);
+			// console.log(new Date(item.time_to));
 			const check_in_contacts_records = await checkInRecord
 				.find({
 					$and: [
@@ -1124,7 +1412,7 @@ app.post("/search_casual_contacts_visitor", async (req, res) => {
 			});
 
 			if (counter == req.body.check_in_timerange.length - 1) {
-				console.log(check_in_contacts_records_arr);
+				// console.log(check_in_contacts_records_arr);
 				res.send(check_in_contacts_records_arr);
 			}
 
@@ -1148,7 +1436,7 @@ app.post("/search_casual_contacts_dependent", async (req, res) => {
 		// return res.send(true);
 		var confirmed_visitor_id = confirmed_visitor._id;
 		var counter = 0;
-		console.log(req.body.check_in_timerange);
+		// console.log(req.body.check_in_timerange);
 		req.body.check_in_timerange.forEach(async function (item) {
 			// console.log(item);
 			const check_in_contacts_records = await checkInRecord
@@ -1203,7 +1491,7 @@ app.post("/search_casual_contacts_dependent", async (req, res) => {
 				}
 			});
 			if (counter == req.body.check_in_timerange.length - 1) {
-				console.log(check_in_contacts_records_arr);
+				// console.log(check_in_contacts_records_arr);
 				res.send(check_in_contacts_records_arr);
 			}
 
@@ -1313,7 +1601,7 @@ app.post("/verifyToken", async (req, res) => {
 		}
 
 		if (staff_info.first_login == true) {
-			res.send("failed_first_login");
+			return res.send("failed_first_login");
 		}
 
 		return res.send("success");

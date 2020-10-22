@@ -8,6 +8,14 @@ import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
 // link this page to another page
 import { Link } from "react-router-dom";
+import GoogleMapReact from "google-map-react";
+
+const AnyReactComponent = ({}) => (
+	<img
+		src={require("./assets/marker_icon.png")}
+		style={{ height: 35, width: 35 }}
+	/>
+);
 
 class view_confirmed_case_check_ins extends Component {
 	constructor() {
@@ -17,6 +25,7 @@ class view_confirmed_case_check_ins extends Component {
 			check_in_records: null,
 			selected_records_group: null,
 			premise_details: null,
+			show_phone_no_qr: false,
 		};
 	}
 
@@ -133,7 +142,9 @@ class view_confirmed_case_check_ins extends Component {
 					.substring(0, jsonDataReturned.date_created.indexOf(".") - 3);
 				// alert(JSON.stringify(jsonDataReturned));
 
-				this.setState({ selected_records_group: jsonDataReturned });
+				this.setState({
+					selected_records_group: jsonDataReturned,
+				});
 				// alert(JSON.stringify(this.state.records_group));
 
 				// if (jsonData) {
@@ -211,11 +222,20 @@ class view_confirmed_case_check_ins extends Component {
 	};
 
 	handleClose = () => {
-		this.setState({ modal_show: false });
+		this.setState({ modal_show: false, show_phone_no_qr: false });
 	};
 
 	handleShow = (premise_details) => {
-		this.setState({ modal_show: true, premise_details: premise_details });
+		this.setState({
+			modal_show: true,
+			premise_details: premise_details,
+			region: {
+				lat: parseFloat(premise_details.premise_lat),
+				lng: parseFloat(premise_details.premise_lng),
+			},
+			place_lat: parseFloat(premise_details.premise_lat),
+			place_lng: parseFloat(premise_details.premise_lng),
+		});
 	};
 
 	handleCopyID = (sid) => {
@@ -229,6 +249,10 @@ class view_confirmed_case_check_ins extends Component {
 			check_in_records,
 			selected_records_group,
 			premise_details,
+			region,
+			place_lat,
+			place_lng,
+			show_phone_no_qr,
 		} = this.state;
 		return (
 			<div class="">
@@ -248,31 +272,82 @@ class view_confirmed_case_check_ins extends Component {
 									<div>
 										<div>
 											<h5>Premise Details</h5>
-											<p>{premise_details._id}</p>
-											<p>{premise_details.premise_name}</p>
+											{/* <p>{premise_details._id}</p> */}
+											<p>{"Premise Name: " + premise_details.premise_name}</p>
 											<p>
-												{premise_details.premise_address +
+												{"Premise Address: " +
+													premise_details.premise_address +
 													", " +
 													premise_details.premise_postcode +
 													", " +
 													premise_details.premise_state}
 											</p>
-											<hr />
-											<h5>Owner Details</h5>
-											<p>{premise_details.owner_fname}</p>
-											<p>{premise_details.phone_no}</p>
-											<img
-												width="150"
-												src={`https://qrcode.tec-it.com/API/QRCode?data=tel%3a${premise_details.phone_no}`}
-											/>
-											<br />
-											<br />
 											<a
-												href={"mailto:" + premise_details.email}
+												href={`https://www.google.com/maps/place/?q=place_id:${premise_details.premise_id}`}
 												target="_blank"
 											>
-												{premise_details.email}
+												View on Google Map
 											</a>
+											<div style={{ height: "300px", width: "70%" }}>
+												<GoogleMapReact
+													// bootstrapURLKeys={
+													// 	{
+													// 		key: "api_key",
+													// 	}
+													// }
+													center={region}
+													defaultZoom={16}
+												>
+													<AnyReactComponent
+														lat={place_lat}
+														lng={place_lng}
+														// text="My Marker"
+													/>
+												</GoogleMapReact>
+											</div>
+											<hr />
+											<h5>Owner Details</h5>
+											<p>{"Owner's Name: " + premise_details.owner_fname}</p>
+											<p>
+												{"Owner's Phone No.: " + premise_details.phone_no + " "}
+												<span
+													class="show_phone_no_qr"
+													onClick={() => {
+														if (show_phone_no_qr) {
+															this.setState({ show_phone_no_qr: false });
+														} else {
+															this.setState({ show_phone_no_qr: true });
+														}
+													}}
+												>
+													{show_phone_no_qr
+														? "Hide Phone No. QR code"
+														: "Show Phone No. QR code"}
+												</span>
+											</p>
+
+											{show_phone_no_qr === false ? (
+												<p></p>
+											) : (
+												<div>
+													<img
+														width="150"
+														src={`https://qrcode.tec-it.com/API/QRCode?data=tel%3a${premise_details.phone_no}`}
+													/>
+													<br />
+													<br />
+												</div>
+											)}
+
+											<p>
+												Owner's Email:{" "}
+												<a
+													href={"mailto:" + premise_details.email}
+													target="_blank"
+												>
+													{premise_details.email}
+												</a>
+											</p>
 										</div>
 									</div>
 								)}

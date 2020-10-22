@@ -24,13 +24,15 @@ class search_casual_contacts extends Component {
 			check_in_day_range: null,
 			check_in_time_range_before_hr: 0,
 			check_in_time_range_before_min: 30,
-			check_in_time_range_after_hr: 8,
+			check_in_time_range_after_hr: 24,
 			check_in_time_range_after_min: 0,
 			ttl_contact_counts: null,
 			traceUntilDate: null,
 			traceFromDate: null,
 			casual_contact_counter: null,
 			ttl_check_ins: null,
+			loading_confirmed_case_info: false,
+			loading_confirmed_case_check_in: false,
 		};
 	}
 
@@ -106,13 +108,13 @@ class search_casual_contacts extends Component {
 				return res.json();
 			})
 			.then((jsonData) => {
-				alert(JSON.stringify(jsonData));
-				// if (jsonData) {
-				// 	alert("Login successful");
-				// 	// this.props.navigation.navigate("visitor_home");
-				// } else {
-				// 	alert("Phone number or password is incorrect");
-				// }
+				// alert(JSON.stringify(jsonData));
+				if (jsonData) {
+					alert("Saved successful");
+					// this.props.navigation.navigate("visitor_home");
+				} else {
+					alert("Error occured while saving the record");
+				}
 			})
 			.catch((error) => {
 				alert("Error: " + error);
@@ -239,6 +241,11 @@ class search_casual_contacts extends Component {
 				// checked_in_premise.forEach(function (item) {
 				// 	item.date_created = new Date(item.date_created);
 				// });
+				if (jsonData == false) {
+					this.setState({ checked_in_premise: "none" });
+					return;
+				}
+
 				var checked_in_premise = jsonData;
 				var counter = 0;
 				var check_in_timerange = new Array();
@@ -332,7 +339,15 @@ class search_casual_contacts extends Component {
 			.then((jsonData) => {
 				// alert(JSON.stringify(jsonData));
 				if (jsonData == false) {
-					alert("not found dependent");
+					this.setState({
+						confirmed_case_info: null,
+						confirmed_case_user_type: null,
+						checked_in_premise: null,
+						casual_contacts_visitors: null,
+						ttl_contact_counts: null,
+					});
+					alert("User not found in the database");
+					return;
 				} else {
 					this.setState({
 						confirmed_case_info: jsonData,
@@ -361,6 +376,7 @@ class search_casual_contacts extends Component {
 		check_in_time_range_after_hr,
 		check_in_time_range_after_min
 	) => {
+		// alert(currentTime.toISOString());
 		await fetch("/search_check_in_records_visitor", {
 			method: "POST",
 			headers: {
@@ -407,6 +423,8 @@ class search_casual_contacts extends Component {
 					var time_check_in_before_iso = time_check_in_before.toISOString();
 
 					var time_check_in = new Date(item.date_created);
+					// alert(time_check_in.toISOString());
+
 					// calculate time range to
 					var time_check_in_after = time_check_in;
 					time_check_in_after.setHours(
@@ -470,6 +488,9 @@ class search_casual_contacts extends Component {
 				.value;
 
 		var currentTime = new Date();
+		currentTime = new Date(
+			currentTime.getTime() - currentTime.getTimezoneOffset() * 60000
+		); // utc +8
 		currentTime.setUTCHours(0, 0, 0, 0); // change time to midnight 00:00 of that day
 		currentTime.setDate(currentTime.getDate() - check_in_day_range);
 
@@ -659,7 +680,7 @@ class search_casual_contacts extends Component {
 								<h5 class="mb-3">
 									{"Number of casual contacts: " +
 										casual_contact_counter +
-										" person(s)"}
+										" contact(s)"}
 								</h5>
 								<ReactTable
 									data={casual_contacts_this_premise}
@@ -671,12 +692,16 @@ class search_casual_contacts extends Component {
 										{
 											Header: "Name",
 											accessor: "ic_fname_merged",
-											Cell: (row) => <div class="table_column">{row.value}</div>,
+											Cell: (row) => (
+												<div class="table_column">{row.value}</div>
+											),
 										},
 										{
 											Header: "IC No.",
 											accessor: "ic_num_merged",
-											Cell: (row) => <div class="table_column">{row.value}</div>,
+											Cell: (row) => (
+												<div class="table_column">{row.value}</div>
+											),
 										},
 										// {
 										// 	Header: "Visitor IC No.",
@@ -697,7 +722,9 @@ class search_casual_contacts extends Component {
 										{
 											Header: "Check In Date Time",
 											accessor: "date_created_simplified",
-											Cell: (row) => <div class="table_column">{row.value}</div>,
+											Cell: (row) => (
+												<div class="table_column">{row.value}</div>
+											),
 										},
 										// {
 										// 	Header: "View Casual Contacts",
@@ -850,7 +877,7 @@ class search_casual_contacts extends Component {
 								</label>
 							</div>
 							<input
-								placeholder="8"
+								placeholder="24"
 								type="number"
 								min="0"
 								max="48"
@@ -899,10 +926,11 @@ class search_casual_contacts extends Component {
 							</div>
 						</div>
 					)}
-					{checked_in_premise === "none" ? <h5>No check in found</h5> : <p></p>}
-					{checked_in_premise === null ||
-					casual_contacts_visitors === null ||
-					ttl_contact_counts === null ? (
+					{checked_in_premise === "none" ? (
+						<h5>No check in found</h5>
+					) : checked_in_premise === null ||
+					  casual_contacts_visitors === null ||
+					  ttl_contact_counts === null ? (
 						<p></p>
 					) : (
 						// checked_in_premise.map((item) => (
@@ -932,11 +960,11 @@ class search_casual_contacts extends Component {
 									" to " +
 									traceUntilDate}
 							</h5>
-							<h5>{"Total Check Ins: " + ttl_check_ins + " premise(s)"}</h5>
+							<h5>{"Total Check Ins: " + ttl_check_ins + " check in(s)"}</h5>
 							<h5>
 								{"Total Number of Casual Contacts: " +
 									ttl_contact_counts +
-									" person(s)"}
+									" contact(s)"}
 							</h5>
 
 							<br />
@@ -966,7 +994,11 @@ class search_casual_contacts extends Component {
 									{
 										Header: "Number of Contacts",
 										accessor: "casual_contact_counts",
-										Cell: (row) => <div class="table_column">{row.value + " person(s)"}</div>,
+										Cell: (row) => (
+											<div class="table_column">
+												{row.value + " contact(s)"}
+											</div>
+										),
 									},
 									{
 										Header: "View Casual Contacts",

@@ -104,6 +104,39 @@ class NavBar extends Component {
 						</Link>
 					</div>
 
+					{/* batch email */}
+					<button class="dropdown-btn py-2">
+						Batch Email
+						<i class="fa fa-caret-down mr-2 mt-1"></i>
+					</button>
+					<div class="dropdown-container">
+						<Link
+							to={{
+								pathname: `/send_batch_email`,
+							}}
+						>
+							<a class="">Send Batch Email</a>
+						</Link>
+						<Link
+							to={{
+								pathname: `/manage_staff`,
+							}}
+						>
+							<a class="">Manage Sent Email</a>
+						</Link>
+					</div>
+
+					{/* health risk assessment analytics */}
+					<div class="mx-0">
+						<Link
+							to={{
+								pathname: `/health_risk_assessment_analytics`,
+							}}
+						>
+							<a class="p-0 m-0">Health Risk Assessment Analytics</a>
+						</Link>
+					</div>
+
 					{/* manage staff */}
 					<button class="dropdown-btn py-2">
 						Staff

@@ -95,6 +95,39 @@ class view_casual_contacts extends Component {
 		// alert("ID copied: " + sid);
 	};
 
+	confirm_delete = async (record_id) => {
+		if (
+			window.confirm(
+				"Confirm to delete? All of the premise record, casual contact records and hotspots record under this confirmed case will be deleted."
+			)
+		) {
+			await fetch("/delete_saved_casual_contact_records", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ record_id: record_id }),
+			})
+				.then((res) => {
+					// console.log(JSON.stringify(res.headers));
+					return res.text();
+				})
+				.then((jsonData) => {
+					if (jsonData) {
+						this.startup();
+						alert("Record has been deleted successfully");
+					} else {
+						alert("Error occured while deleting the record");
+					}
+				})
+				.catch((error) => {
+					alert("Error: " + error);
+				});
+		} else {
+			return;
+		}
+	};
+
 	render() {
 		var { records_group } = this.state;
 		return (
@@ -141,20 +174,24 @@ class view_casual_contacts extends Component {
 								{
 									Header: "Confirmed Case IC",
 									accessor: "visitor_and_dependent_ic_num",
-									width: 300,
+									width: 200,
 									Cell: (row) => <div class="table_column">{row.value}</div>,
 								},
 								{
 									Header: "Total Premise Checked In",
 									accessor: "check_in_count",
 									width: 150,
-									Cell: (row) => <div class="table_column">{row.value + " person(s)"}</div>,
+									Cell: (row) => (
+										<div class="table_column">{row.value + " place(s)"}</div>
+									),
 								},
 								{
 									Header: "Total Casual Contact",
 									accessor: "casual_contact_count",
 									width: 150,
-									Cell: (row) => <div class="table_column">{row.value + " person(s)"}</div>,
+									Cell: (row) => (
+										<div class="table_column">{row.value + " contact(s)"}</div>
+									),
 								},
 								// {
 								// 	Header: "Day Range",
@@ -168,6 +205,12 @@ class view_casual_contacts extends Component {
 								// 	Header: "Time Range (After)",
 								// 	accessor: "time_range_check_in_after",
 								// },
+								{
+									Header: "Added by",
+									accessor: "staff.fname",
+									width: 200,
+									Cell: (row) => <div class="table_column">{row.value}</div>,
+								},
 								{
 									Header: "Date Created",
 									accessor: "date_created",
@@ -199,7 +242,12 @@ class view_casual_contacts extends Component {
 									width: 200,
 									Cell: ({ value }) => (
 										<div class="table_column">
-											<button class="manage_btn register btn btn-danger">
+											<button
+												class="manage_btn register btn btn-danger"
+												onClick={() => {
+													this.confirm_delete(value);
+												}}
+											>
 												Delete
 											</button>
 										</div>

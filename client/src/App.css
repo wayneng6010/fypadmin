@@ -15,6 +15,28 @@
 
 @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css");
 
+.hra_questions {
+	background-color: #f8f8f8;
+	padding: 15px 40px 5px 40px;
+	border-radius: 20px;
+	margin-bottom: 20px;
+}
+
+.hra_questions p {
+	line-height: 1;
+}
+
+.no_record {
+	font-weight: bold;
+	font-style: italic;
+	font-size: 20px;
+}
+
+.show_phone_no_qr {
+	cursor: pointer;
+	color: #007bff;
+}
+
 .App-header {
 	background-color: #282c34;
 	min-height: 100vh;
@@ -166,6 +188,7 @@
 	line-height: 2;
 	position: fixed;
 	top: 0;
+	z-index: 10;
 }
 
 .page_header .page_title {
@@ -210,6 +233,7 @@
 #update_hotspot_details_outer .label_outer,
 #update_hotspot_details_outer input,
 #update_hotspot_details_outer textarea,
+#trace_casual_contacts_form textarea,
 #update_hotspot_details_outer select {
 	vertical-align: middle;
 	display: inline-block;
@@ -218,6 +242,7 @@
 #update_hotspot_details_outer .label_outer,
 #update_hotspot_details_outer input,
 #update_hotspot_details_outer textarea,
+#trace_casual_contacts_form textarea,
 #update_hotspot_details_outer select {
 	margin-bottom: 5px;
 }
@@ -244,8 +269,14 @@
 
 #update_hotspot_details_outer input,
 #update_hotspot_details_outer textarea,
+#trace_casual_contacts_form textarea,
+#trace_casual_contacts_form .email_subject,
 #update_hotspot_details_outer select {
 	width: 600px;
+}
+
+#trace_casual_contacts_form textarea {
+	white-space: pre-wrap;
 }
 
 #trace_casual_contacts_form #search_submit_btn {

@@ -90,9 +90,76 @@ class view_hotspots extends Component {
 			});
 	};
 
+	isDisable = (value) => {
+		var { records_group } = this.state;
+
+		var disabled = false;
+		records_group.forEach(function (item) {
+			// alert(value);
+			if (item._id == value) {
+				// alert(item.hotspot_count);
+				if (item.hotspot_count == 0) {
+					disabled = true;
+				}
+			}
+		});
+		// alert(disabled);
+		return disabled;
+	};
+
+	isDisable_1 = (value) => {
+		var { records_group } = this.state;
+
+		var disabled = false;
+		records_group.forEach(function (item) {
+			// alert(value);
+			if (item._id == value) {
+				// alert(item.hotspot_count);
+				if (item.hotspot_count == 0) {
+					disabled = true;
+				}
+			}
+		});
+		// alert(disabled);
+		return disabled;
+	};
+
 	handleCopyID = (sid) => {
 		navigator.clipboard.writeText(sid);
 		// alert("ID copied: " + sid);
+	};
+
+	confirm_delete = async (record_id) => {
+		if (
+			window.confirm(
+				"Confirm to delete? All of the hotspots record under this confirmed case will be deleted."
+			)
+		) {
+			await fetch("/delete_all_hotspot_record", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ record_id: record_id }),
+			})
+				.then((res) => {
+					// console.log(JSON.stringify(res.headers));
+					return res.text();
+				})
+				.then((jsonData) => {
+					if (jsonData) {
+						this.startup();
+						alert("Record has been deleted successfully");
+					} else {
+						alert("Error occured while deleting the record");
+					}
+				})
+				.catch((error) => {
+					alert("Error: " + error);
+				});
+		} else {
+			return;
+		}
 	};
 
 	render() {
@@ -146,7 +213,9 @@ class view_hotspots extends Component {
 								{
 									Header: "Total Hotspots",
 									accessor: "hotspot_count",
-									Cell: (row) => <div class="table_column">{row.value}</div>,
+									Cell: (row) => (
+										<div class="table_column">{row.value + " place(s)"}</div>
+									),
 								},
 								// {
 								// 	Header: "Total Casual Contact",
@@ -180,7 +249,10 @@ class view_hotspots extends Component {
 													pathname: `/view_hotspots_each/${value}`,
 												}}
 											>
-												<button class="manage_btn register btn btn-success">
+												<button
+													class="manage_btn register btn btn-success"
+													disabled={this.isDisable(value)}
+												>
 													View
 												</button>
 											</Link>
@@ -192,7 +264,13 @@ class view_hotspots extends Component {
 									accessor: "_id",
 									Cell: ({ value }) => (
 										<div class="table_column">
-											<button class="manage_btn register btn btn-danger">
+											<button
+												class="manage_btn register btn btn-danger"
+												disabled={this.isDisable_1(value)}
+												onClick={() => {
+													this.confirm_delete(value);
+												}}
+											>
 												Delete All
 											</button>
 										</div>

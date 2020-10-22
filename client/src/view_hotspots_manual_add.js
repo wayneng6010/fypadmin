@@ -83,26 +83,29 @@ class view_hotspots_manual_add extends Component {
 			.then((jsonData) => {
 				// alert(JSON.stringify(jsonData));
 				// var jsonDataReturned = jsonData;
-
-				jsonData.forEach(function (item) {
-					// alert(JSON.stringify(item.check_in_record.user_premiseowner));
-					item.date_created = item.date_created
-						.replace("T", " ")
-						.substring(0, item.date_created.indexOf(".") - 3);
-					item.hotspotDetailsMerged = {
-						record_id: item._id,
-						place_id: item.place_id,
-						place_lat: parseFloat(item.place_lat),
-						place_lng: parseFloat(item.place_lng),
-						hotspot_place_name: item.place_name,
-						hotspot_place_address: item.place_address,
-						hotspot_place_state: item.place_state,
-						hotspot_description: item.description,
-						hotspot_remark: item.remark,
-					};
-				});
-
-				this.setState({ home_hotpots_record: jsonData });
+				if (!Object.keys(jsonData).length) {
+					this.setState({ home_hotpots_record: "none" });
+					return;
+				} else {
+					jsonData.forEach(function (item) {
+						// alert(JSON.stringify(item.check_in_record.user_premiseowner));
+						item.date_created = item.date_created
+							.replace("T", " ")
+							.substring(0, item.date_created.indexOf(".") - 3);
+						item.hotspotDetailsMerged = {
+							record_id: item._id,
+							place_id: item.place_id,
+							place_lat: parseFloat(item.place_lat),
+							place_lng: parseFloat(item.place_lng),
+							hotspot_place_name: item.place_name,
+							hotspot_place_address: item.place_address,
+							hotspot_place_state: item.place_state,
+							hotspot_description: item.description,
+							hotspot_remark: item.remark,
+						};
+					});
+					this.setState({ home_hotpots_record: jsonData });
+				}
 			})
 			.catch((error) => {
 				alert("Error: " + error);
@@ -294,6 +297,35 @@ class view_hotspots_manual_add extends Component {
 			.catch((error) => {
 				alert(error);
 			});
+	};
+
+	confirm_delete = async (record_id) => {
+		if (window.confirm("Confirm to delete?")) {
+			await fetch("/delete_one_hotspot_record", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ record_id: record_id }),
+			})
+				.then((res) => {
+					// console.log(JSON.stringify(res.headers));
+					return res.text();
+				})
+				.then((jsonData) => {
+					if (jsonData) {
+						this.startup();
+						alert("Record has been deleted successfully");
+					} else {
+						alert("Error occured while deleting the record");
+					}
+				})
+				.catch((error) => {
+					alert("Error: " + error);
+				});
+		} else {
+			return;
+		}
 	};
 
 	handleChange = async (e) => {
@@ -564,7 +596,7 @@ class view_hotspots_manual_add extends Component {
 											<GoogleMapReact
 												// bootstrapURLKeys={
 												// 	{
-												// 		key: "key",
+												// 		key: "api_key",
 												// 	}
 												// }
 												center={region}
@@ -601,7 +633,7 @@ class view_hotspots_manual_add extends Component {
 					</Modal>
 					{/* <div style={{ height: "100vh", width: "100%" }}>
 						<GoogleMapReact
-							bootstrapURLKeys={{ key: "key" }}
+							bootstrapURLKeys={{ key: "api_key" }}
 							defaultCenter={this.props.center}
 							defaultZoom={this.props.zoom}
 						>
@@ -628,6 +660,8 @@ class view_hotspots_manual_add extends Component {
 					)}
 					{home_hotpots_record == null ? (
 						<p></p>
+					) : home_hotpots_record == "none" ? (
+						<p class="no_record">No record found</p>
 					) : (
 						<ReactTable
 							data={home_hotpots_record}
@@ -692,6 +726,9 @@ class view_hotspots_manual_add extends Component {
 											<button
 												class="manage_btn register btn btn-danger"
 												// disabled={this.isDisable(value)}
+												onClick={() => {
+													this.confirm_delete(value);
+												}}
 											>
 												Delete
 											</button>

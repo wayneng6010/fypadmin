@@ -36,6 +36,7 @@ class view_hotspots_each extends Component {
 			place_lng: null,
 			place_id: null,
 			search_query: null,
+			show_phone_no_qr: false,
 		};
 		this.handleChange = this.handleChange.bind(this);
 	}
@@ -183,24 +184,29 @@ class view_hotspots_each extends Component {
 			.then((jsonData) => {
 				// alert(JSON.stringify(jsonData));
 				// var jsonDataReturned = jsonData;
+				if (!Object.keys(jsonData).length) {
+					this.setState({ premise_hotpots_record: "none" });
+					return;
+				} else {
+					jsonData.forEach(function (item) {
+						// alert(JSON.stringify(item.check_in_record.user_premiseowner));
+						item.date_created = item.date_created
+							.replace("T", " ")
+							.substring(0, item.date_created.indexOf(".") - 3);
+						item.check_in_record.date_created = item.check_in_record.date_created
+							.replace("T", " ")
+							.substring(0, item.check_in_record.date_created.indexOf(".") - 3);
+						item.hotspotDetailsMerged = {
+							record_id: item._id,
+							place_id: item.place_id,
+							place_lat: parseFloat(item.place_lat),
+							place_lng: parseFloat(item.place_lng),
+						};
+					});
 
-				jsonData.forEach(function (item) {
-					// alert(JSON.stringify(item.check_in_record.user_premiseowner));
-					item.date_created = item.date_created
-						.replace("T", " ")
-						.substring(0, item.date_created.indexOf(".") - 3);
-					item.check_in_record.date_created = item.check_in_record.date_created
-						.replace("T", " ")
-						.substring(0, item.check_in_record.date_created.indexOf(".") - 3);
-					item.hotspotDetailsMerged = {
-						record_id: item._id,
-						place_id: item.place_id,
-						place_lat: parseFloat(item.place_lat),
-						place_lng: parseFloat(item.place_lng),
-					};
-				});
+					this.setState({ premise_hotpots_record: jsonData });
+				}
 
-				this.setState({ premise_hotpots_record: jsonData });
 				// this.getCasualContactCount(jsonData);
 
 				// this.getEachPremiseName(jsonData);
@@ -230,19 +236,24 @@ class view_hotspots_each extends Component {
 				return res.json();
 			})
 			.then((jsonData) => {
-				// alert(JSON.stringify(jsonData[0]));
-				jsonData[0].date_created = jsonData[0].date_created
-					.replace("T", " ")
-					.substring(0, jsonData[0].date_created.indexOf(".") - 3);
+				if (!Object.keys(jsonData).length) {
+					this.setState({ home_hotpots_record: "none" });
+					return;
+				} else {
+					// alert(JSON.stringify(jsonData[0]));
+					jsonData[0].date_created = jsonData[0].date_created
+						.replace("T", " ")
+						.substring(0, jsonData[0].date_created.indexOf(".") - 3);
 
-				jsonData[0].hotspotDetailsMerged = {
-					record_id: jsonData[0]._id,
-					place_id: jsonData[0].place_id,
-					place_lat: parseFloat(jsonData[0].place_lat),
-					place_lng: parseFloat(jsonData[0].place_lng),
-				};
+					jsonData[0].hotspotDetailsMerged = {
+						record_id: jsonData[0]._id,
+						place_id: jsonData[0].place_id,
+						place_lat: parseFloat(jsonData[0].place_lat),
+						place_lng: parseFloat(jsonData[0].place_lng),
+					};
 
-				this.setState({ home_hotpots_record: jsonData });
+					this.setState({ home_hotpots_record: jsonData });
+				}
 			})
 			.catch((error) => {
 				alert("Error: " + error);
@@ -419,6 +430,35 @@ class view_hotspots_each extends Component {
 		zoom: 11,
 	};
 
+	confirm_delete = async (record_id) => {
+		if (window.confirm("Confirm to delete?")) {
+			await fetch("/delete_one_hotspot_record", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ record_id: record_id }),
+			})
+				.then((res) => {
+					// console.log(JSON.stringify(res.headers));
+					return res.text();
+				})
+				.then((jsonData) => {
+					if (jsonData) {
+						this.startup();
+						alert("Record has been deleted successfully");
+					} else {
+						alert("Error occured while deleting the record");
+					}
+				})
+				.catch((error) => {
+					alert("Error: " + error);
+				});
+		} else {
+			return;
+		}
+	};
+
 	render() {
 		var {
 			premise_hotpots_record,
@@ -431,6 +471,7 @@ class view_hotspots_each extends Component {
 			place_lat,
 			place_lng,
 			search_prediction_selected,
+			show_phone_no_qr,
 		} = this.state;
 		return (
 			<div class="">
@@ -455,19 +496,57 @@ class view_hotspots_each extends Component {
 								<div>
 									<div>
 										<h5>Premise Details</h5>
-										<p>{premise_details._id}</p>
-										<p>{premise_details.premise_name}</p>
+										{/* <p>{premise_details._id}</p> */}
+										<p>{"Premise Name: " + premise_details.premise_name}</p>
 										<p>
-											{premise_details.premise_address +
+											{"Premise Address: " +
+												premise_details.premise_address +
 												", " +
 												premise_details.premise_postcode +
 												", " +
 												premise_details.premise_state}
 										</p>
+										<hr />
 										<h5>Owner Details</h5>
-										<p>{premise_details.owner_fname}</p>
-										<p>{premise_details.phone_no}</p>
-										<p>{premise_details.email}</p>
+										<p>{"Owner's Name: " + premise_details.owner_fname}</p>
+										<p>
+											{"Owner's Phone No.: " + premise_details.phone_no + " "}
+											<span
+												class="show_phone_no_qr"
+												onClick={() => {
+													if (show_phone_no_qr) {
+														this.setState({ show_phone_no_qr: false });
+													} else {
+														this.setState({ show_phone_no_qr: true });
+													}
+												}}
+											>
+												{show_phone_no_qr
+													? "Hide Phone No. QR code"
+													: "Show Phone No. QR code"}
+											</span>
+										</p>
+										{show_phone_no_qr === false ? (
+											<p></p>
+										) : (
+											<div>
+												<img
+													width="150"
+													src={`https://qrcode.tec-it.com/API/QRCode?data=tel%3a${premise_details.phone_no}`}
+												/>
+												<br />
+												<br />
+											</div>
+										)}
+										<p>
+											Owner's Email:{" "}
+											<a
+												href={"mailto:" + premise_details.email}
+												target="_blank"
+											>
+												{premise_details.email}
+											</a>
+										</p>
 									</div>
 								</div>
 							)}
@@ -548,7 +627,7 @@ class view_hotspots_each extends Component {
 											<GoogleMapReact
 												// bootstrapURLKeys={
 												// 	{
-												// 		key: "key",
+												// 		key: "api_key",
 												// 	}
 												// }
 												center={region}
@@ -585,7 +664,7 @@ class view_hotspots_each extends Component {
 					</Modal>
 					{/* <div style={{ height: "100vh", width: "100%" }}>
 						<GoogleMapReact
-							bootstrapURLKeys={{ key: "key" }}
+							bootstrapURLKeys={{ key: "api_key" }}
 							defaultCenter={this.props.center}
 							defaultZoom={this.props.zoom}
 						>
@@ -611,9 +690,18 @@ class view_hotspots_each extends Component {
 						</div>
 					)}
 
-					<h4 class="mb-3"><img class="mb-2 mr-3" src="https://www.flaticon.com/svg/static/icons/svg/2948/2948176.svg" width={30} />Residential Location Hotspot</h4>
+					<h4 class="mb-3">
+						<img
+							class="mb-2 mr-3"
+							src="https://www.flaticon.com/svg/static/icons/svg/2948/2948176.svg"
+							width={30}
+						/>
+						Residential Location Hotspot
+					</h4>
 					{home_hotpots_record == null ? (
 						<p></p>
+					) : home_hotpots_record == "none" ? (
+						<p class="no_record">No record found</p>
 					) : (
 						<ReactTable
 							data={home_hotpots_record}
@@ -650,6 +738,9 @@ class view_hotspots_each extends Component {
 										<div class="table_column">
 											<button
 												class="manage_btn register btn btn-danger"
+												onClick={() => {
+													this.confirm_delete(value);
+												}}
 												// disabled={this.isDisable(value)}
 											>
 												Delete
@@ -664,9 +755,18 @@ class view_hotspots_each extends Component {
 					)}
 
 					<br />
-					<h4 class="mb-3"><img class="mb-2 mr-3" src="https://www.flaticon.com/svg/static/icons/svg/126/126122.svg" width={30} />Premise Hotspot</h4>
+					<h4 class="mb-3">
+						<img
+							class="mb-2 mr-3"
+							src="https://www.flaticon.com/svg/static/icons/svg/126/126122.svg"
+							width={30}
+						/>
+						Premise Hotspot
+					</h4>
 					{premise_hotpots_record == null ? (
 						<p></p>
+					) : premise_hotpots_record == "none" ? (
+						<p class="no_record">No record found</p>
 					) : (
 						<ReactTable
 							data={premise_hotpots_record}
@@ -753,6 +853,9 @@ class view_hotspots_each extends Component {
 											<button
 												class="manage_btn register btn btn-danger"
 												// disabled={this.isDisable(value)}
+												onClick={() => {
+													this.confirm_delete(value);
+												}}
 											>
 												Delete
 											</button>

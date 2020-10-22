@@ -361,7 +361,7 @@ class add_hotspot extends Component {
 							<GoogleMapReact
 								// bootstrapURLKeys={
 								// 	{
-								// 		key: "key",
+								// 		key: "api_key",
 								// 	}
 								// }
 								center={region}

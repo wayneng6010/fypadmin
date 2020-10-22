@@ -8,6 +8,14 @@ import Modal from "react-bootstrap/Modal";
 import Button from "react-bootstrap/Button";
 // link this page to another page
 import { Link } from "react-router-dom";
+import GoogleMapReact from "google-map-react";
+
+const AnyReactComponent = ({}) => (
+	<img
+		src={require("./assets/marker_icon.png")}
+		style={{ height: 35, width: 35 }}
+	/>
+);
 
 class view_casual_contact_check_ins extends Component {
 	constructor() {
@@ -19,6 +27,7 @@ class view_casual_contact_check_ins extends Component {
 			contact_info: null,
 			selected_records_group: null,
 			selected_check_in_records: null,
+			show_phone_no_qr: false,
 		};
 	}
 
@@ -139,12 +148,14 @@ class view_casual_contact_check_ins extends Component {
 					if (item.hasOwnProperty("visitor_dependent")) {
 						item["ic_num_merged"] = item.visitor_dependent.ic_num;
 						item["role"] = "Dependent";
-						item["ic_fname_merged"] =
-							item.visitor_dependent.ic_fname;
+						item["ic_fname_merged"] = item.visitor_dependent.ic_fname;
 						item["contact_info_merged"] = {
 							visitor_fname: item.user_visitor.ic_fname,
 							visitor_ic_num: item.user_visitor.ic_num,
 							visitor_ic_address: item.user_visitor.ic_address,
+							visitor_home_lat: item.user_visitor.home_lat,
+							visitor_home_lng: item.user_visitor.home_lng,
+							visitor_home_id: item.user_visitor.home_id,
 							visitor_phone_no: item.user_visitor.phone_no,
 							visitor_email: item.user_visitor.email,
 							dependent_fname: item.visitor_dependent.ic_fname,
@@ -158,6 +169,9 @@ class view_casual_contact_check_ins extends Component {
 							visitor_fname: item.user_visitor.ic_fname,
 							visitor_ic_num: item.user_visitor.ic_num,
 							visitor_ic_address: item.user_visitor.ic_address,
+							visitor_home_lat: item.user_visitor.home_lat,
+							visitor_home_lng: item.user_visitor.home_lng,
+							visitor_home_id: item.user_visitor.home_id,
 							visitor_phone_no: item.user_visitor.phone_no,
 							visitor_email: item.user_visitor.email,
 						};
@@ -187,11 +201,20 @@ class view_casual_contact_check_ins extends Component {
 	};
 
 	handleClose = () => {
-		this.setState({ modal_show: false });
+		this.setState({ modal_show: false, show_phone_no_qr: false });
 	};
 
 	handleShow = (contact_info) => {
-		this.setState({ modal_show: true, contact_info: contact_info });
+		this.setState({
+			modal_show: true,
+			contact_info: contact_info,
+			region: {
+				lat: parseFloat(contact_info.visitor_home_lat),
+				lng: parseFloat(contact_info.visitor_home_lng),
+			},
+			place_lat: parseFloat(contact_info.visitor_home_lat),
+			place_lng: parseFloat(contact_info.visitor_home_lng),
+		});
 		// alert(JSON.stringify(value));
 		// this.view_casual_contacts(confirmed_case_check_in_id);
 	};
@@ -204,6 +227,10 @@ class view_casual_contact_check_ins extends Component {
 			contact_info,
 			selected_check_in_records,
 			selected_records_group,
+			show_phone_no_qr,
+			region,
+			place_lat,
+			place_lng,
 		} = this.state;
 		return (
 			<div class="">
@@ -219,37 +246,95 @@ class view_casual_contact_check_ins extends Component {
 							<div>
 								{contact_info.hasOwnProperty("dependent_fname") ? (
 									<div>
-										<p>
+										<h5>
 											Dependent under{" "}
 											{contact_info.visitor_fname +
 												" with IC " +
 												contact_info.visitor_ic_num}
+										</h5>
+										<p>
+											{"Name of Dependent: " + contact_info.dependent_fname}
 										</p>
-										<p>{contact_info.dependent_fname}</p>
-										<p>{contact_info.dependent_ic_num}</p>
+										<p>
+											{"IC No. of Dependent: " + contact_info.dependent_ic_num}
+										</p>
+										<hr />
+										<h5>Contact Information of {contact_info.visitor_fname}</h5>
 									</div>
 								) : (
 									<div>
-										<p>Visitor</p>
-										<p>{contact_info.visitor_fname}</p>
-										<p>{contact_info.visitor_ic_num}</p>
+										<h5>Visitor</h5>
+										<p>{"Name: " + contact_info.visitor_fname}</p>
+										<p>{"IC No.: " + contact_info.visitor_ic_num}</p>
+									</div>
+								)}
+								<p>
+									{"Phone No.: " + contact_info.visitor_phone_no + " "}
+									<span
+										class="show_phone_no_qr"
+										onClick={() => {
+											if (show_phone_no_qr) {
+												this.setState({ show_phone_no_qr: false });
+											} else {
+												this.setState({ show_phone_no_qr: true });
+											}
+										}}
+									>
+										{show_phone_no_qr
+											? "Hide Phone No. QR code"
+											: "Show Phone No. QR code"}
+									</span>
+								</p>
+
+								{show_phone_no_qr === false ? (
+									<p></p>
+								) : (
+									<div>
+										<img
+											width="150"
+											src={`https://qrcode.tec-it.com/API/QRCode?data=tel%3a${contact_info.visitor_phone_no}`}
+										/>
+										<br />
+										<br />
 									</div>
 								)}
 
-								<p>{contact_info.visitor_phone_no}</p>
-								<img
-									width="150"
-									src={`https://qrcode.tec-it.com/API/QRCode?data=tel%3a${contact_info.visitor_phone_no}`}
-								/>
-								<br />
-								<br />
+								<p>
+									Email:{" "}
+									<a
+										href={"mailto:" + contact_info.visitor_email}
+										target="_blank"
+									>
+										{contact_info.visitor_email}
+									</a>
+								</p>
+
+								<p>
+									{"Residential Address: " + contact_info.visitor_ic_address}
+								</p>
 								<a
-									href={"mailto:" + contact_info.visitor_email}
+									href={`https://www.google.com/maps/place/?q=place_id:${contact_info.visitor_home_id}`}
 									target="_blank"
 								>
-									{contact_info.visitor_email}
+									View on Google Map
 								</a>
-								<p>{contact_info.visitor_ic_address}</p>
+								<div style={{ height: "350px", width: "80%" }}>
+									<GoogleMapReact
+										// bootstrapURLKeys={
+										// 	{
+										// 		key: "api_key",
+										// 	}
+										// }
+										center={region}
+										defaultZoom={16}
+									>
+										<AnyReactComponent
+											lat={place_lat}
+											lng={place_lng}
+											// text="My Marker"
+										/>
+									</GoogleMapReact>
+								</div>
 							</div>
 						)}
 					</Modal.Body>
@@ -367,6 +452,11 @@ class view_casual_contact_check_ins extends Component {
 								// 	Header: "Email",
 								// 	accessor: "user_visitor.email",
 								// },
+								{
+									Header: "Check In Entry Point",
+									accessor: "check_in_record.premise_qr_code.entry_point",
+									Cell: (row) => <div class="table_column">{row.value}</div>,
+								},
 								{
 									Header: "Check In Date",
 									accessor: "check_in_record.date_created",
