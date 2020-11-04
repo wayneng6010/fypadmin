@@ -17,6 +17,7 @@ const ExcelColumn = ReactExport.ExcelFile.ExcelColumn;
 class download_excel_infected_premise extends Component {
 	constructor() {
 		super();
+		this.verifyToken();
 		this.state = {
 			check_in_premises: null,
 			check_in_id: null,
@@ -27,6 +28,7 @@ class download_excel_infected_premise extends Component {
 			dependent_record: null,
 			visitor_record: null,
 			infected_premise: null,
+			verify_token: null,
 		};
 	}
 
@@ -36,6 +38,35 @@ class download_excel_infected_premise extends Component {
 		// alert(this.state.check_in_id + " " + this.state.group_record_id);
 		this.startup();
 	}
+
+	verifyToken = async () => {
+		await fetch("/verifyToken", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({}),
+		})
+			.then((res) => {
+				// console.log(JSON.stringify(res.headers));
+				return res.text();
+			})
+			.then((jsonData) => {
+				// alert(JSON.stringify(jsonData));
+				if (jsonData === "failed") {
+					this.setState({ verify_token: false });
+					window.location.href = "/";
+				} else if (jsonData === "success") {
+					this.setState({ verify_token: true });
+				} else if (jsonData === "failed_first_login") {
+					this.setState({ verify_token: false });
+					window.location.href = "/change_password_first_login";
+				}
+			})
+			.catch((error) => {
+				alert("Error: " + error);
+			});
+	};
 
 	getCasualContactCount = async (checkInRecord) => {
 		await fetch("/getCasualContactCount", {
@@ -54,7 +85,7 @@ class download_excel_infected_premise extends Component {
 				var infected_premise_arr = new Array();
 				jsonData.forEach(function (item) {
 					infected_premise_arr.push({
-						premise_id: item.user_premiseowner._id,
+						_id: item._id,
 						premise_name: item.user_premiseowner.premise_name,
 						premise_owner_name: item.user_premiseowner.owner_fname,
 						premise_owner_phone_no: item.user_premiseowner.phone_no,
@@ -97,6 +128,7 @@ class download_excel_infected_premise extends Component {
 				var jsonDataReturned = jsonData;
 				if (jsonDataReturned.hasOwnProperty("confirmed_case_visitor")) {
 					confirmed_case_arr.push({
+						_id: jsonDataReturned._id,
 						visitor_and_dependent_fname:
 							jsonDataReturned.confirmed_case_visitor.ic_fname,
 						visitor_and_dependent_ic_num:
@@ -106,6 +138,7 @@ class download_excel_infected_premise extends Component {
 					jsonDataReturned.hasOwnProperty("confirmed_case_dependent")
 				) {
 					confirmed_case_arr.push({
+						_id: jsonDataReturned._id,
 						visitor_and_dependent_fname:
 							jsonDataReturned.confirmed_case_dependent.ic_fname +
 							" (Dependent)",
@@ -152,10 +185,12 @@ class download_excel_infected_premise extends Component {
 	};
 
 	render() {
-		var { confirmed_case_details, infected_premise } = this.state;
+		var { confirmed_case_details, infected_premise, verify_token } = this.state;
 
 		const confirmed_case_details_dataSet = confirmed_case_details;
 		const infected_premise_dataSet = infected_premise;
+
+		if (!verify_token) return <div />;
 
 		// const styledDataSet = [
 		// 	{
@@ -185,6 +220,7 @@ class download_excel_infected_premise extends Component {
 							data={confirmed_case_details_dataSet}
 							name="Confirmed Case"
 						>
+							<ExcelColumn label="ID" value="_id" />
 							<ExcelColumn
 								label="Confirmed Case Name"
 								value="visitor_and_dependent_fname"
@@ -195,7 +231,7 @@ class download_excel_infected_premise extends Component {
 							/>
 						</ExcelSheet>
 						<ExcelSheet data={infected_premise_dataSet} name="Infected Premise">
-							<ExcelColumn label="Premise ID" value="premise_id" />
+							<ExcelColumn label="ID" value="_id" />
 							<ExcelColumn label="Premise Name" value="premise_name" />
 							<ExcelColumn label="Owner Name" value="premise_owner_name" />
 							<ExcelColumn

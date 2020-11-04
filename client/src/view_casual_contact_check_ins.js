@@ -20,6 +20,7 @@ const AnyReactComponent = ({}) => (
 class view_casual_contact_check_ins extends Component {
 	constructor() {
 		super();
+		this.verifyToken();
 		this.state = {
 			check_in_id: null,
 			check_in_group_id: null,
@@ -28,8 +29,39 @@ class view_casual_contact_check_ins extends Component {
 			selected_records_group: null,
 			selected_check_in_records: null,
 			show_phone_no_qr: false,
+			search_query: null,
+			verify_token: false,
 		};
 	}
+
+	verifyToken = async () => {
+		await fetch("/verifyToken", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({}),
+		})
+			.then((res) => {
+				// console.log(JSON.stringify(res.headers));
+				return res.text();
+			})
+			.then((jsonData) => {
+				// alert(JSON.stringify(jsonData));
+				if (jsonData === "failed") {
+					this.setState({ verify_token: false });
+					window.location.href = "/";
+				} else if (jsonData === "success") {
+					this.setState({ verify_token: true });
+				} else if (jsonData === "failed_first_login") {
+					this.setState({ verify_token: false });
+					window.location.href = "/change_password_first_login";
+				}
+			})
+			.catch((error) => {
+				alert("Error: " + error);
+			});
+	};
 
 	// signals that the all components have rendered properly
 	componentDidMount() {
@@ -142,53 +174,105 @@ class view_casual_contact_check_ins extends Component {
 			})
 			.then((jsonData) => {
 				// alert(JSON.stringify(jsonData));
+				if (jsonData == false) {
+					alert("No record found");
+				} else {
+					var jsonDataReturned = jsonData;
 
-				var jsonDataReturned = jsonData;
-				jsonDataReturned.forEach(function (item) {
-					if (item.hasOwnProperty("visitor_dependent")) {
-						item["ic_num_merged"] = item.visitor_dependent.ic_num;
-						item["role"] = "Dependent";
-						item["ic_fname_merged"] = item.visitor_dependent.ic_fname;
-						item["contact_info_merged"] = {
-							visitor_fname: item.user_visitor.ic_fname,
-							visitor_ic_num: item.user_visitor.ic_num,
-							visitor_ic_address: item.user_visitor.ic_address,
-							visitor_home_lat: item.user_visitor.home_lat,
-							visitor_home_lng: item.user_visitor.home_lng,
-							visitor_home_id: item.user_visitor.home_id,
-							visitor_phone_no: item.user_visitor.phone_no,
-							visitor_email: item.user_visitor.email,
-							dependent_fname: item.visitor_dependent.ic_fname,
-							dependent_ic_num: item.visitor_dependent.ic_num,
-						};
-					} else if (item.hasOwnProperty("user_visitor")) {
-						item["ic_num_merged"] = item.user_visitor.ic_num;
-						item["role"] = "Visitor";
-						item["ic_fname_merged"] = item.user_visitor.ic_fname;
-						item["contact_info_merged"] = {
-							visitor_fname: item.user_visitor.ic_fname,
-							visitor_ic_num: item.user_visitor.ic_num,
-							visitor_ic_address: item.user_visitor.ic_address,
-							visitor_home_lat: item.user_visitor.home_lat,
-							visitor_home_lng: item.user_visitor.home_lng,
-							visitor_home_id: item.user_visitor.home_id,
-							visitor_phone_no: item.user_visitor.phone_no,
-							visitor_email: item.user_visitor.email,
-						};
-					}
-					item.check_in_record.date_created = item.check_in_record.date_created
-						.replace("T", " ")
-						.substring(0, item.check_in_record.date_created.indexOf(".") - 3);
-				});
+					var ic_firstTwoChar, birth_year, age;
+					var d = new Date();
+					var this_year = d.getFullYear();
+					var ic_lastChar, gender;
 
-				this.setState({ check_in_records: jsonDataReturned });
+					jsonDataReturned.forEach(function (item) {
+						if (item.hasOwnProperty("visitor_dependent")) {
+							ic_lastChar = item.visitor_dependent.ic_num.slice(
+								item.visitor_dependent.ic_num.length - 1
+							);
+							if (ic_lastChar % 2 == 0) {
+								gender = "Female";
+							} else {
+								gender = "Male";
+							}
 
-				// if (jsonData) {
-				// 	alert("Login successful");
-				// 	// this.props.navigation.navigate("visitor_home");
-				// } else {
-				// 	alert("Phone number or password is incorrect");
-				// }
+							ic_firstTwoChar = item.visitor_dependent.ic_num.substring(0, 2);
+							if (
+								ic_firstTwoChar < parseInt(this_year.toString().substring(2, 4))
+							) {
+								birth_year = 2000 + parseInt(ic_firstTwoChar);
+							} else {
+								birth_year = 1900 + parseInt(ic_firstTwoChar);
+							}
+							age = this_year - birth_year;
+
+							item["ic_num_merged"] = item.visitor_dependent.ic_num;
+							item["role"] = "Dependent";
+							item["ic_fname_merged"] = item.visitor_dependent.ic_fname;
+							item["contact_info_merged"] = {
+								visitor_fname: item.user_visitor.ic_fname,
+								visitor_ic_num: item.user_visitor.ic_num,
+								visitor_ic_address: item.user_visitor.ic_address,
+								visitor_home_lat: item.user_visitor.home_lat,
+								visitor_home_lng: item.user_visitor.home_lng,
+								visitor_home_id: item.user_visitor.home_id,
+								visitor_phone_no: item.user_visitor.phone_no,
+								visitor_email: item.user_visitor.email,
+								dependent_fname: item.visitor_dependent.ic_fname,
+								dependent_ic_num: item.visitor_dependent.ic_num,
+								dependent_relationship: item.visitor_dependent.relationship,
+								dependent_age: age,
+								dependent_gender: gender,
+							};
+						} else if (item.hasOwnProperty("user_visitor")) {
+							ic_lastChar = item.user_visitor.ic_num.slice(
+								item.user_visitor.ic_num.length - 1
+							);
+							if (ic_lastChar % 2 == 0) {
+								gender = "Female";
+							} else {
+								gender = "Male";
+							}
+
+							ic_firstTwoChar = item.user_visitor.ic_num.substring(0, 2);
+							if (
+								ic_firstTwoChar < parseInt(this_year.toString().substring(2, 4))
+							) {
+								birth_year = 2000 + parseInt(ic_firstTwoChar);
+							} else {
+								birth_year = 1900 + parseInt(ic_firstTwoChar);
+							}
+							age = this_year - birth_year;
+
+							item["ic_num_merged"] = item.user_visitor.ic_num;
+							item["role"] = "Visitor";
+							item["ic_fname_merged"] = item.user_visitor.ic_fname;
+							item["contact_info_merged"] = {
+								visitor_fname: item.user_visitor.ic_fname,
+								visitor_ic_num: item.user_visitor.ic_num,
+								visitor_ic_address: item.user_visitor.ic_address,
+								visitor_home_lat: item.user_visitor.home_lat,
+								visitor_home_lng: item.user_visitor.home_lng,
+								visitor_home_id: item.user_visitor.home_id,
+								visitor_phone_no: item.user_visitor.phone_no,
+								visitor_email: item.user_visitor.email,
+								visitor_age: age,
+								visitor_gender: gender,
+							};
+						}
+						item.check_in_record.date_created = item.check_in_record.date_created
+							.replace("T", " ")
+							.substring(0, item.check_in_record.date_created.indexOf(".") - 3);
+					});
+
+					jsonDataReturned.sort(function compare(a, b) {
+						return (
+							new Date(a.check_in_record.date_created) -
+							new Date(b.check_in_record.date_created)
+						);
+					});
+
+					this.setState({ check_in_records: jsonDataReturned });
+				}
 			})
 			.catch((error) => {
 				alert("Error: " + error);
@@ -219,6 +303,145 @@ class view_casual_contact_check_ins extends Component {
 		// this.view_casual_contacts(confirmed_case_check_in_id);
 	};
 
+	handleCopyID = (sid) => {
+		navigator.clipboard.writeText(sid);
+		// alert("ID copied: " + sid);
+	};
+
+	submitSearch = async () => {
+		var { search_query } = this.state;
+
+		if (search_query == null) {
+			this.startup();
+			return;
+		}
+
+		if (search_query.trim() == "") {
+			this.startup();
+			return;
+		}
+
+		await fetch("/search_casual_contact_check_in", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				check_in_id: this.state.check_in_id,
+				check_in_group_id: this.state.check_in_group_id,
+				search_query: this.state.search_query,
+			}),
+		})
+			.then((res) => {
+				// console.log(JSON.stringify(res.headers));
+				return res.json();
+			})
+			.then((jsonData) => {
+				// alert(JSON.stringify(jsonData));
+				if (jsonData == false) {
+					alert("No record found");
+				} else {
+					var jsonDataReturned = jsonData;
+
+					var ic_firstTwoChar, birth_year, age;
+					var d = new Date();
+					var this_year = d.getFullYear();
+					var ic_lastChar, gender;
+					jsonDataReturned.forEach(function (item) {
+						if (item.hasOwnProperty("visitor_dependent")) {
+							ic_lastChar = item.visitor_dependent.ic_num.slice(
+								item.visitor_dependent.ic_num.length - 1
+							);
+							if (ic_lastChar % 2 == 0) {
+								gender = "Female";
+							} else {
+								gender = "Male";
+							}
+
+							ic_firstTwoChar = item.visitor_dependent.ic_num.substring(0, 2);
+							if (
+								ic_firstTwoChar < parseInt(this_year.toString().substring(2, 4))
+							) {
+								birth_year = 2000 + parseInt(ic_firstTwoChar);
+							} else {
+								birth_year = 1900 + parseInt(ic_firstTwoChar);
+							}
+							age = this_year - birth_year;
+
+							item["ic_num_merged"] = item.visitor_dependent.ic_num;
+							item["role"] = "Dependent";
+							item["ic_fname_merged"] = item.visitor_dependent.ic_fname;
+							item["contact_info_merged"] = {
+								visitor_fname: item.user_visitor.ic_fname,
+								visitor_ic_num: item.user_visitor.ic_num,
+								visitor_ic_address: item.user_visitor.ic_address,
+								visitor_home_lat: item.user_visitor.home_lat,
+								visitor_home_lng: item.user_visitor.home_lng,
+								visitor_home_id: item.user_visitor.home_id,
+								visitor_phone_no: item.user_visitor.phone_no,
+								visitor_email: item.user_visitor.email,
+								dependent_fname: item.visitor_dependent.ic_fname,
+								dependent_ic_num: item.visitor_dependent.ic_num,
+								dependent_relationship: item.visitor_dependent.relationship,
+								dependent_age: age,
+								dependent_gender: gender,
+							};
+						} else if (item.hasOwnProperty("user_visitor")) {
+							ic_lastChar = item.user_visitor.ic_num.slice(
+								item.user_visitor.ic_num.length - 1
+							);
+							if (ic_lastChar % 2 == 0) {
+								gender = "Female";
+							} else {
+								gender = "Male";
+							}
+
+							ic_firstTwoChar = item.user_visitor.ic_num.substring(0, 2);
+							if (
+								ic_firstTwoChar < parseInt(this_year.toString().substring(2, 4))
+							) {
+								birth_year = 2000 + parseInt(ic_firstTwoChar);
+							} else {
+								birth_year = 1900 + parseInt(ic_firstTwoChar);
+							}
+							age = this_year - birth_year;
+
+							item["ic_num_merged"] = item.user_visitor.ic_num;
+							item["role"] = "Visitor";
+							item["ic_fname_merged"] = item.user_visitor.ic_fname;
+							item["contact_info_merged"] = {
+								visitor_fname: item.user_visitor.ic_fname,
+								visitor_ic_num: item.user_visitor.ic_num,
+								visitor_ic_address: item.user_visitor.ic_address,
+								visitor_home_lat: item.user_visitor.home_lat,
+								visitor_home_lng: item.user_visitor.home_lng,
+								visitor_home_id: item.user_visitor.home_id,
+								visitor_phone_no: item.user_visitor.phone_no,
+								visitor_email: item.user_visitor.email,
+								visitor_age: age,
+								visitor_gender: gender,
+							};
+						}
+						item.check_in_record.date_created = item.check_in_record.date_created
+							.replace("T", " ")
+							.substring(0, item.check_in_record.date_created.indexOf(".") - 3);
+					});
+
+					jsonDataReturned.sort(function compare(a, b) {
+						return (
+							new Date(a.check_in_record.date_created) -
+							new Date(b.check_in_record.date_created)
+						);
+					});
+
+					this.setState({ check_in_records: jsonDataReturned });
+				}
+			})
+			.catch((error) => {
+				alert("Error: " + error);
+			});
+	};
+
 	render() {
 		var {
 			check_in_id,
@@ -231,7 +454,11 @@ class view_casual_contact_check_ins extends Component {
 			region,
 			place_lat,
 			place_lng,
+			verify_token,
 		} = this.state;
+
+		if (!verify_token) return <div />;
+
 		return (
 			<div class="">
 				<NavBar />
@@ -258,6 +485,11 @@ class view_casual_contact_check_ins extends Component {
 										<p>
 											{"IC No. of Dependent: " + contact_info.dependent_ic_num}
 										</p>
+										<p>{"Age: " + contact_info.dependent_age}</p>
+										<p>{"Gender: " + contact_info.dependent_gender}</p>
+										<p>
+											{"Relationship: " + contact_info.dependent_relationship}
+										</p>
 										<hr />
 										<h5>Contact Information of {contact_info.visitor_fname}</h5>
 									</div>
@@ -266,6 +498,8 @@ class view_casual_contact_check_ins extends Component {
 										<h5>Visitor</h5>
 										<p>{"Name: " + contact_info.visitor_fname}</p>
 										<p>{"IC No.: " + contact_info.visitor_ic_num}</p>
+										<p>{"Age: " + contact_info.visitor_age}</p>
+										<p>{"Gender: " + contact_info.visitor_gender}</p>
 									</div>
 								)}
 								<p>
@@ -322,7 +556,7 @@ class view_casual_contact_check_ins extends Component {
 									<GoogleMapReact
 										// bootstrapURLKeys={
 										// 	{
-										// 		key: "api_key",
+										// 		key: "tempapikey",
 										// 	}
 										// }
 										center={region}
@@ -351,6 +585,28 @@ class view_casual_contact_check_ins extends Component {
 					<div class="page_title">View Casual Contact Check Ins</div>
 				</div>
 				<div class="page_content">
+					<div class="navigation_breadcrumb">
+						<p>
+							<Link
+								target="_blank"
+								to={{
+									pathname: `/view_casual_contacts`,
+								}}
+							>
+								<span class="">Confirmed Case Record</span>
+							</Link>
+							<span class=""> / </span>
+							<Link
+								target="_blank"
+								to={{
+									pathname: `/view_confirmed_case_check_ins/${check_in_group_id}`,
+								}}
+							>
+								<span class="">Confirmed Case Check Ins</span>
+							</Link>
+							<span class=""> / Casual Contact Check Ins</span>
+						</p>
+					</div>
 					<h2>Casual Contact Check Ins</h2>
 					<br />
 					{selected_records_group == null ? (
@@ -370,13 +626,18 @@ class view_casual_contact_check_ins extends Component {
 						<p>Loading...</p>
 					) : (
 						<div id="premise_header_outer">
-							<h5>Checked In Premise Details</h5>
+							<h5>Confirmed Case Checked In Premise Details</h5>
 							<div id="premise_header_inner">
 								<p>
 									{selected_check_in_records.user_premiseowner.premise_name}
 								</p>
 								<p>
-									{"Confirmed case checked in at " +
+									{"Entry point: " +
+										selected_check_in_records.check_in_record.premise_qr_code
+											.entry_point}
+								</p>
+								<p>
+									{"Checked in at " +
 										selected_check_in_records.check_in_record.date_created}
 								</p>
 							</div>
@@ -400,15 +661,58 @@ class view_casual_contact_check_ins extends Component {
 							</Link>
 						</div>
 					)}
-
+					<div class="search_outer">
+						<div class="row">
+							<input
+								type="text"
+								class="form-control col-sm-3"
+								id="search_query"
+								name="search_query"
+								value={this.state.search_query}
+								onChange={(e) => {
+									this.setState({ search_query: e.target.value });
+								}}
+								placeholder="Search ID"
+							/>
+							<button
+								class="btn btn-success col-sm-1 ml-2"
+								onClick={() => {
+									this.submitSearch();
+								}}
+								type="submit"
+							>
+								Search
+							</button>
+						</div>
+					</div>
 					<br />
-
 					{check_in_records == null ? (
 						<p>Loading...</p>
 					) : (
 						<ReactTable
 							data={check_in_records}
 							columns={[
+								{
+									Header: "ID",
+									accessor: "_id",
+									width: 120,
+									Cell: (row) => (
+										<div class="table_column">
+											{"..." +
+												row.value.slice(row.value.length - 4).toUpperCase() +
+												" "}
+											<img
+												src="https://www.flaticon.com/svg/static/icons/svg/60/60990.svg"
+												width={17}
+												title="Copy full ID"
+												class="copy_id_icon"
+												onClick={() => {
+													this.handleCopyID(row.value);
+												}}
+											/>
+										</div>
+									),
+								},
 								{
 									Header: "Name",
 									accessor: "ic_fname_merged",
@@ -510,6 +814,7 @@ class view_casual_contact_check_ins extends Component {
 							className="-striped -highlight"
 						/>
 					)}
+					<br />
 				</div>
 			</div>
 		);

@@ -9,38 +9,63 @@ import { Link } from "react-router-dom";
 class change_password_first_login extends Component {
 	constructor() {
 		super();
-		// this.startup();
+		this.state = {
+			verify_token: false,
+		};
+		this.startup();
 	}
 
 	// signals that the all components have rendered properly
 	componentDidMount() {}
 
 	startup = async () => {
-		// await fetch("/testing", {
+		await fetch("/verifyToken", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({}),
+		})
+			.then((res) => {
+				// console.log(JSON.stringify(res.headers));
+				return res.text();
+			})
+			.then((jsonData) => {
+				// alert(JSON.stringify(jsonData));
+				if (jsonData === "failed") {
+					this.setState({ verify_token: false });
+					window.location.href = "/";
+				} else if (jsonData === "success") {
+					this.setState({ verify_token: false });
+					window.location.href = "/dashboard";
+				} else if (jsonData === "failed_first_login") {
+					this.setState({ verify_token: true });
+					// window.location.href = "/change_password_first_login";
+				}
+			})
+			.catch((error) => {
+				alert("Error: " + error);
+			});
+
+		// await fetch("/getLoginDetails", {
 		// 	method: "POST",
 		// 	headers: {
 		// 		"Content-Type": "application/json",
 		// 	},
-		// 	body: JSON.stringify({
-		// 		visitor_id: "991004-07-5721",
-		// 		date_from: "2020-08-24T13:54:36.038+00:00",
-		// 	}),
+		// 	body: JSON.stringify({}),
 		// })
 		// 	.then((res) => {
 		// 		// console.log(JSON.stringify(res.headers));
 		// 		return res.json();
 		// 	})
 		// 	.then((jsonData) => {
-		// 		alert(JSON.stringify(jsonData));
-		// 		// if (jsonData) {
-		// 		// 	alert("Login successful");
-		// 		// 	// this.props.navigation.navigate("visitor_home");
-		// 		// } else {
-		// 		// 	alert("Phone number or password is incorrect");
-		// 		// }
+		// 		// alert(JSON.stringify(jsonData));
+		// 		if (jsonData[0].role == 1) {
+		// 			window.location.href = "/dashboard";
+		// 		}
 		// 	})
 		// 	.catch((error) => {
-		// 		alert("Error: " + error);
+		// 		// alert("Error: " + error);
 		// 	});
 	};
 
@@ -87,7 +112,9 @@ class change_password_first_login extends Component {
 					alert("Password changed successful");
 					window.location.href = "/";
 				} else {
-					alert("Current password is incorrect or new password is same as current password");
+					alert(
+						"Current password is incorrect or new password is same as current password"
+					);
 				}
 			})
 			.catch((error) => {
@@ -96,6 +123,8 @@ class change_password_first_login extends Component {
 	};
 
 	render() {
+		const { verify_token } = this.state;
+		if (!verify_token) return <div />;
 		return (
 			<div class="">
 				<div class="page_header">

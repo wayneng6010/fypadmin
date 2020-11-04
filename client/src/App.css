@@ -15,6 +15,87 @@
 
 @import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css");
 
+.no_location_selected {
+	background-color: #cd5c5c;
+	color: white;
+	padding: 10px;
+	width: 750px;
+	margin-top: 10px;
+}
+
+.location_selected {
+	background-color: #3cb371;
+	color: white;
+	padding: 10px;
+	width: 750px;
+	margin-top: 10px;
+}
+
+.dash_box {
+	height: 200px;
+	margin-left: 10px;
+	font-size: 24px;
+	color: white;
+	position: relative;
+	font-weight: bold;
+}
+
+.left_top {
+	margin-top: 10px;
+}
+
+.right_bottom {
+	position: absolute;
+	bottom: 10px;
+	right: 20px;
+}
+
+.dash_0 {
+	background-color: #257ec9;
+}
+
+.dash_1 {
+	background-color: #ec6b7b;
+}
+
+.dash_2 {
+	background-color: #362e5a;
+}
+
+.dash_3 {
+	background-color: #045c73;
+}
+
+.dash_4 {
+	background-color: #3c3c3c;
+}
+
+.record_confirmed_batch_mail {
+	border: 3px solid #3cb371;
+	padding: 15px 25px;
+	border-radius: 20px;
+}
+
+.record_no_confirm_batch_mail {
+	background-color: #cd5c5c;
+	padding: 10px 25px;
+	margin-bottom: 10px;
+}
+
+.record_no_confirm_batch_mail h5 {
+	font-size: 18px;
+	margin-bottom: 0px;
+	color: white;
+}
+
+.record_confirmed_batch_mail h5 {
+	line-height: 1.7;
+}
+
+.record_confirmed_batch_mail p {
+	line-height: 0.7;
+}
+
 .hra_questions {
 	background-color: #f8f8f8;
 	padding: 15px 40px 5px 40px;
@@ -97,7 +178,7 @@
 	height: 100%;
 	width: 280px;
 	position: fixed;
-	z-index: 1;
+	z-index: 10;
 	top: 0;
 	left: 0;
 	background-color: #242426;
@@ -188,7 +269,7 @@
 	line-height: 2;
 	position: fixed;
 	top: 0;
-	z-index: 10;
+	z-index: 5;
 }
 
 .page_header .page_title {
@@ -201,6 +282,13 @@
 	font-size: 18px;
 	line-height: 2.7;
 	color: black;
+}
+
+.navigation_breadcrumb {
+	background-color: #f6f6f6;
+	padding: 10px 20px;
+	height: 45px;
+	margin-bottom: 10px;
 }
 
 .page_content {
@@ -346,10 +434,17 @@
 	margin-bottom: 20px;
 }
 
+.casual_contacts_outer .casual_contacts_trace_info {
+	border: 3px solid #3cb371;
+	border-radius: 10px;
+	width: 600px;
+	padding: 15px 25px 10px 25px;
+}
+
 #confirmed_case_info_outer {
 	border-radius: 10px;
 	background-color: #ececec;
-	width: 500px;
+	width: 600px;
 	height: 110px;
 	margin: 30px 0 20px 0;
 }
@@ -385,7 +480,7 @@
 }
 
 #confirmed_case_header_inner p {
-	flex: 0.1;
+	flex: 0.2;
 	margin-bottom: 0;
 }
 
@@ -406,11 +501,11 @@
 }
 
 #casual_contact_header_inner p:nth-child(1) {
-	flex: 0.2;
+	flex: 0.3;
 }
 
 #casual_contact_header_inner p:nth-child(2) {
-	flex: 0.25;
+	flex: 0.3;
 }
 
 #premise_header_outer {
@@ -434,7 +529,11 @@
 }
 
 #premise_header_inner p:nth-child(2) {
-	flex: 0.25;
+	flex: 0.2;
+}
+
+#premise_header_inner p:nth-child(3) {
+	flex: 0.2;
 }
 
 .logout_outer {
@@ -459,6 +558,13 @@
 	align-items: center;
 	justify-content: center;
 	margin-top: 2px;
+}
+
+.table_column_grey {
+	text-align: center;
+	line-height: 2.5;
+	color: rgba(0, 0, 0, 0.7);
+	font-weight: bold;
 }
 
 .table_column_green {

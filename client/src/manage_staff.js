@@ -13,6 +13,8 @@ class manage_staff extends Component {
 		this.state = {
 			staff_list: null,
 			search_query: null,
+			verify_token: false,
+			verify_role: false,
 		};
 	}
 
@@ -22,6 +24,56 @@ class manage_staff extends Component {
 	}
 
 	startup = async () => {
+		await fetch("/verifyToken", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({}),
+		})
+			.then((res) => {
+				// console.log(JSON.stringify(res.headers));
+				return res.text();
+			})
+			.then((jsonData) => {
+				// alert(JSON.stringify(jsonData));
+				if (jsonData === "failed") {
+					this.setState({ verify_token: false });
+					window.location.href = "/";
+				} else if (jsonData === "success") {
+					this.setState({ verify_token: true });
+				} else if (jsonData === "failed_first_login") {
+					this.setState({ verify_token: false });
+					window.location.href = "/change_password_first_login";
+				}
+			})
+			.catch((error) => {
+				alert("Error: " + error);
+			});
+
+		await fetch("/getLoginDetails", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({}),
+		})
+			.then((res) => {
+				// console.log(JSON.stringify(res.headers));
+				return res.json();
+			})
+			.then((jsonData) => {
+				// alert(JSON.stringify(jsonData));
+				if (jsonData[0].role == 0) {
+					window.location.href = "/dashboard";
+				} else {
+					this.setState({ verify_role: true });
+				}
+			})
+			.catch((error) => {
+				// alert("Error: " + error);
+			});
+
 		// alert(this.state.group_record_id);
 		await fetch("/get_all_staff", {
 			method: "POST",
@@ -65,9 +117,9 @@ class manage_staff extends Component {
 		alert("ID copied: " + sid);
 	};
 
-	changeRole = async (sid) => {
+	switchRole = async (sid) => {
 		var confirm_change = window.confirm(
-			"Confirm to change the role of this staff?"
+			"Confirm to switch the role of this staff? Your role will be switched to staff after this."
 		);
 		if (confirm_change == true) {
 			await fetch("/change_staff_role", {
@@ -84,7 +136,8 @@ class manage_staff extends Component {
 				.then((jsonData) => {
 					if (jsonData == "success") {
 						alert("Role has been changed");
-						this.startup();
+						// this.startup();
+						window.location.href = "/logout";
 					} else {
 						alert("Role failed to change");
 					}
@@ -172,8 +225,44 @@ class manage_staff extends Component {
 	// 	return disabled;
 	// };
 
+	isDisable_switch = (value) => {
+		var { staff_list } = this.state;
+		var disabled = false;
+		staff_list.forEach(function (item) {
+			if (item._id == value) {
+				if (item.role == "Admin") {
+					disabled = true;
+				}
+			}
+		});
+		return disabled;
+	};
+
+	isDisable_delete = (value) => {
+		var { staff_list } = this.state;
+		var disabled = false;
+		staff_list.forEach(function (item) {
+			if (item._id == value) {
+				if (item.role == "Admin") {
+					disabled = true;
+				}
+			}
+		});
+		return disabled;
+	};
+
 	submitSearch = async () => {
 		var { search_query } = this.state;
+
+		if (search_query == null) {
+			this.startup();
+			return;
+		}
+
+		if (search_query.trim() == "") {
+			this.startup();
+			return;
+		}
 
 		await fetch("/search_staff_list", {
 			method: "POST",
@@ -189,26 +278,27 @@ class manage_staff extends Component {
 			.then((jsonData) => {
 				if (jsonData == false) {
 					alert("No record found");
+				} else {
+					jsonData.forEach(function (item) {
+						if (!item.hasOwnProperty("phone_no")) {
+							item.phone_no = "-";
+						}
+						if (item.role == 1) {
+							item.role = "Admin";
+						} else if (item.role == 0) {
+							item.role = "Staff";
+						}
+						if (item.first_login == true) {
+							item.first_login = "No";
+						} else if (item.first_login == false) {
+							item.first_login = "Yes";
+						}
+						item.date_created = item.date_created
+							.replace("T", " ")
+							.substring(0, item.date_created.indexOf(".") - 3);
+					});
+					this.setState({ staff_list: jsonData });
 				}
-				jsonData.forEach(function (item) {
-					if (!item.hasOwnProperty("phone_no")) {
-						item.phone_no = "-";
-					}
-					if (item.role == 1) {
-						item.role = "Admin";
-					} else if (item.role == 0) {
-						item.role = "Staff";
-					}
-					if (item.first_login == true) {
-						item.first_login = "No";
-					} else if (item.first_login == false) {
-						item.first_login = "Yes";
-					}
-					item.date_created = item.date_created
-						.replace("T", " ")
-						.substring(0, item.date_created.indexOf(".") - 3);
-				});
-				this.setState({ staff_list: jsonData });
 			})
 			.catch((error) => {
 				alert("Error: " + error);
@@ -216,7 +306,8 @@ class manage_staff extends Component {
 	};
 
 	render() {
-		var { staff_list } = this.state;
+		var { staff_list, verify_token, verify_role } = this.state;
+		if (!verify_token || !verify_role) return <div />;
 		return (
 			<div class="">
 				<NavBar />
@@ -342,7 +433,7 @@ class manage_staff extends Component {
 								// 	),
 								// },
 								{
-									Header: "Change Role",
+									Header: "Switch Role",
 									accessor: "_id",
 									width: 150,
 									Cell: ({ value }) => (
@@ -350,10 +441,11 @@ class manage_staff extends Component {
 											<button
 												class="manage_btn register btn btn-success"
 												onClick={() => {
-													this.changeRole(value);
+													this.switchRole(value);
 												}}
+												disabled={this.isDisable_switch(value)}
 											>
-												Change Role
+												Switch Role
 											</button>
 										</div>
 									),
@@ -369,6 +461,7 @@ class manage_staff extends Component {
 												onClick={() => {
 													this.deleteStaff(value);
 												}}
+												disabled={this.isDisable_delete(value)}
 											>
 												Delete
 											</button>

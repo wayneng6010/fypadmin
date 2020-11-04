@@ -51,7 +51,9 @@ class App extends Component {
 				} else if (jsonData == "failed") {
 					alert("Email or password is incorrect");
 				} else if (jsonData == "failed_expired") {
-					alert("This account is expired due to not activate within 3 days. Please contact the system administrator on this.");
+					alert(
+						"This account is expired due to not activate within 3 days. Please contact the system administrator on this."
+					);
 				} else {
 					alert("Error occured while login");
 				}
@@ -107,6 +109,9 @@ class App extends Component {
 								</form>
 							</div>
 							<br />
+							{/* <p class="text-center">
+								Forgot password? Please contact the system admin
+							</p> */}
 							<p class="px-5 text-center">
 								This system is only accessible by medical teams of
 								<br />

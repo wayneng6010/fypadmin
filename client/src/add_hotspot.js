@@ -18,6 +18,7 @@ const AnyReactComponent = ({}) => (
 class add_hotspot extends Component {
 	constructor() {
 		super();
+		this.startup();
 		this.state = {
 			search_prediction: null,
 			search_prediction_selected: true,
@@ -25,18 +26,48 @@ class add_hotspot extends Component {
 			place_lat: 5.4022499,
 			place_lng: 100.3093698,
 			place_id: null,
+			place_name: null,
 			search_query: null,
 			hotspot_place_name: null,
 			hotspot_place_state: "KUALA LUMPUR",
 			hotspot_place_address: null,
 			hotspot_description: null,
 			hotspot_remark: null,
+			verify_token: false,
 		};
-		// this.startup();
 	}
 
 	// signals that the all components have rendered properly
 	componentDidMount() {}
+
+	startup = async () => {
+		await fetch("/verifyToken", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({}),
+		})
+			.then((res) => {
+				// console.log(JSON.stringify(res.headers));
+				return res.text();
+			})
+			.then((jsonData) => {
+				// alert(JSON.stringify(jsonData));
+				if (jsonData === "failed") {
+					this.setState({ verify_token: false });
+					window.location.href = "/";
+				} else if (jsonData === "success") {
+					this.setState({ verify_token: true });
+				} else if (jsonData === "failed_first_login") {
+					this.setState({ verify_token: false });
+					window.location.href = "/change_password_first_login";
+				}
+			})
+			.catch((error) => {
+				alert("Error: " + error);
+			});
+	};
 
 	addNewHotspot = async () => {
 		var {
@@ -170,7 +201,7 @@ class add_hotspot extends Component {
 
 	handleChange = async (e) => {
 		this.setState({ search_query: e.target.value });
-		if (e.target.value.length == 10) {
+		if (e.target.value.length > 10) {
 			await this.searchLocation(e.target.value);
 		} else {
 			this.setState({
@@ -188,7 +219,11 @@ class add_hotspot extends Component {
 			place_lng,
 			place_id,
 			search_query,
+			verify_token,
 		} = this.state;
+
+		if (!verify_token) return <div />;
+
 		return (
 			<div class="">
 				<NavBar />
@@ -278,6 +313,7 @@ class add_hotspot extends Component {
 								placeholder="Description"
 								type="text"
 								rows={3}
+								maxlength="1000"
 								className="form-control"
 								name="description"
 								id="description"
@@ -301,6 +337,7 @@ class add_hotspot extends Component {
 								placeholder="Remark"
 								type="text"
 								rows={3}
+								maxlength="1000"
 								className="form-control"
 								name="remark"
 								id="remark"
@@ -356,12 +393,21 @@ class add_hotspot extends Component {
 							</div>
 						</div>
 
+						{place_id == null ? (
+							<div class="no_location_selected"> No location is selected</div>
+						) : (
+							<div class="location_selected">
+								Location has been selected {"\n"}
+								<p class="mb-0">{this.state.place_name}</p>
+							</div>
+						)}
+
 						<br />
 						<div style={{ height: "500px", width: "750px" }}>
 							<GoogleMapReact
 								// bootstrapURLKeys={
 								// 	{
-								// 		key: "api_key",
+								// 		key: "tempapikey",
 								// 	}
 								// }
 								center={region}

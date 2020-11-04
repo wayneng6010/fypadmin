@@ -9,7 +9,9 @@ class NavBar extends Component {
 	constructor() {
 		super();
 		this.state = {
-			test: "Text",
+			login_name: null,
+			last_login: null,
+			role: 0,
 		};
 		this.startup();
 	}
@@ -32,9 +34,42 @@ class NavBar extends Component {
 		}
 	}
 
-	startup = async () => {};
+	startup = async () => {
+		await fetch("/getLoginDetails", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({}),
+		})
+			.then((res) => {
+				// console.log(JSON.stringify(res.headers));
+				return res.json();
+			})
+			.then((jsonData) => {
+				// alert(JSON.stringify(jsonData));
+				if (jsonData[0].last_login == "undefined") {
+					jsonData[0].last_login = "None";
+				}
+
+				jsonData[0].last_login = jsonData[0].last_login
+					.replace("T", " ")
+					.substring(0, jsonData[0].last_login.indexOf(".") - 3);
+
+				this.setState({
+					login_name: jsonData[0].fname,
+					last_login: jsonData[0].last_login,
+					role: jsonData[0].role,
+				});
+			})
+			.catch((error) => {
+				// alert("Error: " + error);
+			});
+	};
 
 	render() {
+		const { role, verify_role } = this.state;
+
 		return (
 			<div class="">
 				<div class="sidenav">
@@ -105,24 +140,13 @@ class NavBar extends Component {
 					</div>
 
 					{/* batch email */}
-					<button class="dropdown-btn py-2">
-						Batch Email
-						<i class="fa fa-caret-down mr-2 mt-1"></i>
-					</button>
-					<div class="dropdown-container">
+					<div class="mx-0">
 						<Link
 							to={{
 								pathname: `/send_batch_email`,
 							}}
 						>
-							<a class="">Send Batch Email</a>
-						</Link>
-						<Link
-							to={{
-								pathname: `/manage_staff`,
-							}}
-						>
-							<a class="">Manage Sent Email</a>
+							<a class="p-0 m-0">Send Batch Email</a>
 						</Link>
 					</div>
 
@@ -138,25 +162,27 @@ class NavBar extends Component {
 					</div>
 
 					{/* manage staff */}
-					<button class="dropdown-btn py-2">
-						Staff
-						<i class="fa fa-caret-down mr-2 mt-1"></i>
-					</button>
-					<div class="dropdown-container">
-						<Link
-							to={{
-								pathname: `/add_staff`,
-							}}
-						>
-							<a class="">Add New Staff</a>
-						</Link>
-						<Link
-							to={{
-								pathname: `/manage_staff`,
-							}}
-						>
-							<a class="">Manage Staff</a>
-						</Link>
+					<div class={role == 0 ? "d-none" : ""}>
+						<button class="dropdown-btn py-2">
+							Staff
+							<i class="fa fa-caret-down mr-2 mt-1"></i>
+						</button>
+						<div class="dropdown-container">
+							<Link
+								to={{
+									pathname: `/add_staff`,
+								}}
+							>
+								<a class="">Add New Staff</a>
+							</Link>
+							<Link
+								to={{
+									pathname: `/manage_staff`,
+								}}
+							>
+								<a class="">Manage Staff</a>
+							</Link>
+						</div>
 					</div>
 
 					{/* my profile */}

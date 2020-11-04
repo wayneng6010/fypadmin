@@ -20,6 +20,7 @@ const AnyReactComponent = ({}) => (
 class view_hotspots_each extends Component {
 	constructor() {
 		super();
+		this.verifyToken();
 		this.state = {
 			group_record_id: null,
 			premise_hotpots_record: null,
@@ -35,8 +36,11 @@ class view_hotspots_each extends Component {
 			place_lat: null,
 			place_lng: null,
 			place_id: null,
+			place_name: null,
 			search_query: null,
 			show_phone_no_qr: false,
+			verify_token: false,
+			search_query_1: null,
 		};
 		this.handleChange = this.handleChange.bind(this);
 	}
@@ -47,6 +51,35 @@ class view_hotspots_each extends Component {
 		this.startup();
 		// alert(this.props.match.params.group_record_id);
 	}
+
+	verifyToken = async () => {
+		await fetch("/verifyToken", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({}),
+		})
+			.then((res) => {
+				// console.log(JSON.stringify(res.headers));
+				return res.text();
+			})
+			.then((jsonData) => {
+				// alert(JSON.stringify(jsonData));
+				if (jsonData === "failed") {
+					this.setState({ verify_token: false });
+					window.location.href = "/";
+				} else if (jsonData === "success") {
+					this.setState({ verify_token: true });
+				} else if (jsonData === "failed_first_login") {
+					this.setState({ verify_token: false });
+					window.location.href = "/change_password_first_login";
+				}
+			})
+			.catch((error) => {
+				alert("Error: " + error);
+			});
+	};
 
 	// getEachPremiseName = async (confirmed_case_check_ins) => {
 	// 	// var confirmed_case_check_ins_returned = new Array();
@@ -410,7 +443,7 @@ class view_hotspots_each extends Component {
 
 	handleChange = async (e) => {
 		this.setState({ search_query: e.target.value });
-		if (e.target.value.length == 10) {
+		if (e.target.value.length > 10) {
 			await this.searchLocation(e.target.value);
 			// alert(value);
 			// alert(this.state.search_query);
@@ -459,6 +492,64 @@ class view_hotspots_each extends Component {
 		}
 	};
 
+	submitSearch = async () => {
+		var { search_query_1 } = this.state;
+
+		if (search_query_1 == null) {
+			this.startup();
+			return;
+		}
+
+		if (search_query_1.trim() == "") {
+			this.startup();
+			return;
+		}
+
+		await fetch("/search_saved_hotspot_premise", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				group_record_id: this.state.group_record_id,
+				search_query: search_query_1,
+			}),
+		})
+			.then((res) => {
+				// console.log(JSON.stringify(res.headers));
+				return res.json();
+			})
+			.then((jsonData) => {
+				// alert(JSON.stringify(jsonData));
+				// var jsonDataReturned = jsonData;
+				if (!Object.keys(jsonData).length) {
+					this.setState({ premise_hotpots_record: "none" });
+					return;
+				} else {
+					jsonData.forEach(function (item) {
+						// alert(JSON.stringify(item.check_in_record.user_premiseowner));
+						item.date_created = item.date_created
+							.replace("T", " ")
+							.substring(0, item.date_created.indexOf(".") - 3);
+						item.check_in_record.date_created = item.check_in_record.date_created
+							.replace("T", " ")
+							.substring(0, item.check_in_record.date_created.indexOf(".") - 3);
+						item.hotspotDetailsMerged = {
+							record_id: item._id,
+							place_id: item.place_id,
+							place_lat: parseFloat(item.place_lat),
+							place_lng: parseFloat(item.place_lng),
+						};
+					});
+
+					this.setState({ premise_hotpots_record: jsonData });
+				}
+			})
+			.catch((error) => {
+				alert("Error: " + error);
+			});
+	};
+
 	render() {
 		var {
 			premise_hotpots_record,
@@ -470,9 +561,15 @@ class view_hotspots_each extends Component {
 			region,
 			place_lat,
 			place_lng,
+			place_id,
 			search_prediction_selected,
 			show_phone_no_qr,
+			verify_token,
+			search_query_1,
 		} = this.state;
+
+		if (!verify_token) return <div />;
+
 		return (
 			<div class="">
 				<NavBar />
@@ -480,6 +577,19 @@ class view_hotspots_each extends Component {
 					<div class="page_title">View Hotspots</div>
 				</div>
 				<div class="page_content">
+					<div class="navigation_breadcrumb">
+						<p>
+							<Link
+								target="_blank"
+								to={{
+									pathname: `/view_hotspots`,
+								}}
+							>
+								<span class="">Confirmed Case Record</span>
+							</Link>
+							<span class=""> / Hotspots</span>
+						</p>
+					</div>
 					<h2>Hotspots</h2>
 					<Modal
 						size="lg"
@@ -622,12 +732,13 @@ class view_hotspots_each extends Component {
 												))
 											)}
 										</div>
+
 										<br />
 										<div style={{ height: "500px", width: "100%" }}>
 											<GoogleMapReact
 												// bootstrapURLKeys={
 												// 	{
-												// 		key: "api_key",
+												// 		key: "tempapikey",
 												// 	}
 												// }
 												center={region}
@@ -664,7 +775,7 @@ class view_hotspots_each extends Component {
 					</Modal>
 					{/* <div style={{ height: "100vh", width: "100%" }}>
 						<GoogleMapReact
-							bootstrapURLKeys={{ key: "api_key" }}
+							bootstrapURLKeys={{ key: "tempapikey" }}
 							defaultCenter={this.props.center}
 							defaultZoom={this.props.zoom}
 						>
@@ -699,7 +810,7 @@ class view_hotspots_each extends Component {
 						Residential Location Hotspot
 					</h4>
 					{home_hotpots_record == null ? (
-						<p></p>
+						<p>Loading...</p>
 					) : home_hotpots_record == "none" ? (
 						<p class="no_record">No record found</p>
 					) : (
@@ -763,8 +874,33 @@ class view_hotspots_each extends Component {
 						/>
 						Premise Hotspot
 					</h4>
+					<div class="search_outer">
+						<div class="row">
+							<input
+								type="text"
+								class="form-control col-sm-3"
+								id="search_query"
+								name="search_query"
+								value={this.state.search_query_1}
+								onChange={(e) => {
+									this.setState({ search_query_1: e.target.value });
+								}}
+								placeholder="Search Place Name / State"
+							/>
+							<button
+								class="btn btn-success col-sm-1 ml-2"
+								onClick={() => {
+									this.submitSearch();
+								}}
+								type="submit"
+							>
+								Search
+							</button>
+						</div>
+					</div>
+					<br />
 					{premise_hotpots_record == null ? (
-						<p></p>
+						<p>Loading...</p>
 					) : premise_hotpots_record == "none" ? (
 						<p class="no_record">No record found</p>
 					) : (
@@ -867,6 +1003,7 @@ class view_hotspots_each extends Component {
 							className="-striped -highlight"
 						/>
 					)}
+					<br />
 				</div>
 			</div>
 		);

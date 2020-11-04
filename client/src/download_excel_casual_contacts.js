@@ -17,6 +17,7 @@ const ExcelColumn = ReactExport.ExcelFile.ExcelColumn;
 class download_excel_casual_contacts extends Component {
 	constructor() {
 		super();
+		this.verifyToken();
 		this.state = {
 			check_in_premises: null,
 			check_in_id: null,
@@ -26,6 +27,7 @@ class download_excel_casual_contacts extends Component {
 			selected_check_in_records: null,
 			dependent_record: null,
 			visitor_record: null,
+			verify_token: false,
 		};
 	}
 
@@ -36,6 +38,35 @@ class download_excel_casual_contacts extends Component {
 		// alert(this.state.check_in_id + " " + this.state.group_record_id);
 		this.startup();
 	}
+
+	verifyToken = async () => {
+		await fetch("/verifyToken", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({}),
+		})
+			.then((res) => {
+				// console.log(JSON.stringify(res.headers));
+				return res.text();
+			})
+			.then((jsonData) => {
+				// alert(JSON.stringify(jsonData));
+				if (jsonData === "failed") {
+					this.setState({ verify_token: false });
+					window.location.href = "/";
+				} else if (jsonData === "success") {
+					this.setState({ verify_token: true });
+				} else if (jsonData === "failed_first_login") {
+					this.setState({ verify_token: false });
+					window.location.href = "/change_password_first_login";
+				}
+			})
+			.catch((error) => {
+				alert("Error: " + error);
+			});
+	};
 
 	startup = async () => {
 		// alert(this.state.group_record_id);
@@ -111,6 +142,7 @@ class download_excel_casual_contacts extends Component {
 				var jsonDataReturned = jsonData;
 				if (jsonDataReturned.hasOwnProperty("confirmed_case_visitor")) {
 					confirmed_case_arr.push({
+						_id: jsonDataReturned._id,
 						visitor_and_dependent_fname:
 							jsonDataReturned.confirmed_case_visitor.ic_fname,
 						visitor_and_dependent_ic_num:
@@ -120,6 +152,7 @@ class download_excel_casual_contacts extends Component {
 					jsonDataReturned.hasOwnProperty("confirmed_case_dependent")
 				) {
 					confirmed_case_arr.push({
+						_id: jsonDataReturned._id,
 						visitor_and_dependent_fname:
 							jsonDataReturned.confirmed_case_dependent.ic_fname +
 							" (Dependent)",
@@ -169,7 +202,7 @@ class download_excel_casual_contacts extends Component {
 					.substring(0, jsonData.check_in_record.date_created.indexOf(".") - 3);
 
 				premise_arr.push({
-					premise_id: jsonData.user_premiseowner._id,
+					_id: jsonData._id,
 					premise_name: jsonData.user_premiseowner.premise_name,
 					premise_owner_name: jsonData.user_premiseowner.owner_fname,
 					premise_owner_phone_no: jsonData.user_premiseowner.phone_no,
@@ -219,6 +252,7 @@ class download_excel_casual_contacts extends Component {
 
 					if (item.hasOwnProperty("visitor_dependent")) {
 						dependent_arr.push({
+							_id: item._id,
 							visitor_fname: item.user_visitor.ic_fname,
 							visitor_ic_num: item.user_visitor.ic_num,
 							visitor_ic_address: item.user_visitor.ic_address,
@@ -230,6 +264,7 @@ class download_excel_casual_contacts extends Component {
 						});
 					} else if (item.hasOwnProperty("user_visitor")) {
 						visitor_arr.push({
+							_id: item._id,
 							visitor_fname: item.user_visitor.ic_fname,
 							visitor_ic_num: item.user_visitor.ic_num,
 							visitor_ic_address: item.user_visitor.ic_address,
@@ -258,7 +293,10 @@ class download_excel_casual_contacts extends Component {
 			selected_check_in_records,
 			dependent_record,
 			visitor_record,
+			verify_token,
 		} = this.state;
+
+		if (!verify_token) return <div />;
 
 		const confirmed_case_details_dataSet = confirmed_case_details;
 		const selected_check_in_records_dataSet = selected_check_in_records;
@@ -292,7 +330,11 @@ class download_excel_casual_contacts extends Component {
 					<p>Download will begin shortly ...</p>
 				) : (
 					<ExcelFile hideElement>
-						<ExcelSheet data={confirmed_case_details_dataSet} name="Confirmed Case">
+						<ExcelSheet
+							data={confirmed_case_details_dataSet}
+							name="Confirmed Case"
+						>
+							<ExcelColumn label="ID" value="_id" />
 							<ExcelColumn
 								label="Confirmed Case Name"
 								value="visitor_and_dependent_fname"
@@ -302,8 +344,11 @@ class download_excel_casual_contacts extends Component {
 								value="visitor_and_dependent_ic_num"
 							/>
 						</ExcelSheet>
-						<ExcelSheet data={selected_check_in_records_dataSet} name="Premise Checked In">
-							<ExcelColumn label="Premise ID" value="premise_id" />
+						<ExcelSheet
+							data={selected_check_in_records_dataSet}
+							name="Premise Checked In"
+						>
+							<ExcelColumn label="ID" value="_id" />
 							<ExcelColumn label="Premise Name" value="premise_name" />
 							<ExcelColumn label="Owner Name" value="premise_owner_name" />
 							<ExcelColumn
@@ -322,6 +367,7 @@ class download_excel_casual_contacts extends Component {
 							/>
 						</ExcelSheet>
 						<ExcelSheet data={visitor_record_dataSet} name="Visitor">
+							<ExcelColumn label="ID" value="_id" />
 							<ExcelColumn label="Name" value="visitor_fname" />
 							<ExcelColumn label="IC Number" value="visitor_ic_num" />
 							<ExcelColumn
@@ -347,6 +393,7 @@ class download_excel_casual_contacts extends Component {
 					/> */}
 						</ExcelSheet>
 						<ExcelSheet data={dependent_record_dataSet} name="Dependent">
+							<ExcelColumn label="ID" value="_id" />
 							<ExcelColumn label="Dependent Name" value="dependent_fname" />
 							<ExcelColumn
 								label="Dependent IC Number"

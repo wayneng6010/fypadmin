@@ -25,15 +25,33 @@ mongoose
 
 // user schema
 const userVisitorSchema = new mongoose.Schema({
-	ic_num: { type: String, required: true },
-	ic_fname: { type: String, required: true },
-	ic_address: { type: String, required: true },
-	phone_no: { type: String, required: true },
-	email: { type: String, required: true },
-	home_lat: { type: Number, required: true },
-	home_lng: { type: Number, required: true },
-	home_id: { type: String, required: true },
-	password: { type: String, required: true },
+	ic_num: {
+		type: String,
+		unique: true,
+		index: true,
+		required: true,
+		maxlength: 100,
+	},
+	ic_fname: { type: String, required: true, maxlength: 100 },
+	ic_address: { type: String, required: true, maxlength: 100 },
+	phone_no: {
+		type: String,
+		unique: true,
+		index: true,
+		required: true,
+		maxlength: 100,
+	},
+	email: {
+		type: String,
+		unique: true,
+		index: true,
+		required: true,
+		maxlength: 100,
+	},
+	home_lat: { type: Number, required: true, max: 200 },
+	home_lng: { type: Number, required: true, max: 200 },
+	home_id: { type: String, required: true, maxlength: 100 },
+	password: { type: String, required: true, maxlength: 100 },
 	// date_created: { type: String, required: true },
 	// date_created: { type: Date, default: Date.now },
 	date_created: { type: Date },
@@ -41,26 +59,38 @@ const userVisitorSchema = new mongoose.Schema({
 
 // user premise owner schema
 const userPremiseOwnerSchema = new mongoose.Schema({
-	owner_fname: { type: String, required: true },
-	premise_name: { type: String, required: true },
-	phone_no: { type: String, required: true },
-	email: { type: String, required: true },
-	premise_address: { type: String, required: true },
-	premise_postcode: { type: String, required: true },
-	premise_state: { type: String, required: true },
-	premise_lat: { type: Number, required: true },
-	premise_lng: { type: Number, required: true },
-	premise_id: { type: String, required: true },
-	password: { type: String, required: true },
+	owner_fname: { type: String, required: true, maxlength: 100 },
+	premise_name: { type: String, required: true, maxlength: 100 },
+	phone_no: {
+		type: String,
+		unique: true,
+		index: true,
+		required: true,
+		maxlength: 100,
+	},
+	email: {
+		type: String,
+		unique: true,
+		index: true,
+		required: true,
+		maxlength: 100,
+	},
+	premise_address: { type: String, required: true, maxlength: 100 },
+	premise_postcode: { type: String, required: true, maxlength: 100 },
+	premise_state: { type: String, required: true, maxlength: 100 },
+	premise_lat: { type: Number, required: true, max: 200 },
+	premise_lng: { type: Number, required: true, max: 200 },
+	premise_id: { type: String, required: true, maxlength: 100 },
+	password: { type: String, required: true, maxlength: 100 },
 	date_created: { type: Date },
-	premise_qr_codes: [
-		{ type: mongoose.Schema.Types.ObjectId, ref: "premise_qr_code" },
-	],
+	// premise_qr_codes: [
+	// 	{ type: mongoose.Schema.Types.ObjectId, ref: "premise_qr_code" },
+	// ],
 });
 
 // premise qr code schema
 const premiseQRCodeSchema = new mongoose.Schema({
-	entry_point: { type: String, required: true },
+	entry_point: { type: String, required: true, maxlength: 100 },
 	user_premiseowner: {
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "user_premiseowner",
@@ -91,9 +121,15 @@ const checkInRecordSchema = new mongoose.Schema({
 
 // dependent schema
 const visitorDependentSchema = new mongoose.Schema({
-	ic_num: { type: String, required: true },
-	ic_fname: { type: String, required: true },
-	relationship: { type: String, required: true },
+	ic_num: {
+		type: String,
+		unique: true,
+		index: true,
+		required: true,
+		maxlength: 100,
+	},
+	ic_fname: { type: String, required: true, maxlength: 100 },
+	relationship: { type: String, required: true, maxlength: 100 },
 	user_visitor: {
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "user_visitor",
@@ -115,9 +151,9 @@ const savedCasualContactsGroupSchema = new mongoose.Schema({
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "staff",
 	},
-	day_range_check_in: { type: String, required: true },
-	time_range_check_in_before: { type: String, required: true },
-	time_range_check_in_after: { type: String, required: true },
+	day_range_check_in: { type: String, required: true, maxlength: 100 },
+	time_range_check_in_before: { type: String, required: true, maxlength: 100 },
+	time_range_check_in_after: { type: String, required: true, maxlength: 100 },
 	// completed: { type: Boolean, required: true },
 	date_created: { type: Date },
 });
@@ -148,7 +184,8 @@ const savedCasualContactCheckInSchema = new mongoose.Schema({
 	},
 	saved_confirmed_case_check_in: {
 		type: mongoose.Schema.Types.ObjectId,
-		ref: "saved_confirmed_case_check_in",
+		// ref: "saved_confirmed_case_check_in",
+		ref: "check_in_record",
 	},
 	check_in_record: {
 		type: mongoose.Schema.Types.ObjectId,
@@ -184,26 +221,36 @@ const hotspotSchema = new mongoose.Schema({
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "user_visitor",
 	},
-	place_name: { type: String },
-	place_address: { type: String },
-	place_state: { type: String },
-	description: { type: String },
-	remark: { type: String },
-	type: { type: String, required: true },
-	place_id: { type: String, required: true },
-	place_lat: { type: String, required: true },
-	place_lng: { type: String, required: true },
+	place_name: { type: String, maxlength: 100 },
+	place_address: { type: String, maxlength: 100 },
+	place_state: { type: String, maxlength: 100 },
+	description: { type: String, maxlength: 1000 },
+	remark: { type: String, maxlength: 1000 },
+	type: { type: String, required: true, maxlength: 100 },
+	place_id: { type: String, required: true, maxlength: 100 },
+	place_lat: { type: String, required: true, maxlength: 100 },
+	place_lng: { type: String, required: true, maxlength: 100 },
 	// date_end: { type: Date },
 	date_created: { type: Date },
 });
 
 // staff
 const staffSchema = new mongoose.Schema({
-	fname: { type: String, required: true },
-	email: { type: String, unique: true, index: true, required: true },
-	role: { type: Number, required: true },
-	password: { type: String, required: true },
-	phone_no: { type: String },
+	fname: { type: String, required: true, maxlength: 100 },
+	email: {
+		type: String,
+		unique: true,
+		index: true,
+		required: true,
+		maxlength: 100,
+	},
+	role: { type: Number, required: true, max: 1 },
+	password: {
+		type: String,
+		required: true,
+		maxlength: 100,
+	},
+	phone_no: { type: String, maxlength: 100 },
 	first_login: { type: Boolean, required: true },
 	last_login: { type: Date },
 	date_created: { type: Date, required: true },

@@ -95,13 +95,8 @@ const Router = () => (
 			<Route path="/NavBar" component={NavBar} exact />
 			<Route path="/logout" component={logout} exact />
 			
-			{/* <Route path="/eachArtist/:artist_id,:artist_name" component={eachArtist} />
-			<Route path="/savedArtist/" component={savedArtist} />
-			<Route path="/register/" component={register} />
-			<Route path="/login/" component={login} />
-			<Route path="/logout/" component={logout} /> */}
 			{/* if route not found */}
-			{/* <Route path="*" component={login} /> */}
+			<Route path="*" component={login} />
 		</Switch>
 	</BrowserRouter>
 );

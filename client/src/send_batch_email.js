@@ -12,6 +12,7 @@ import { Link } from "react-router-dom";
 class send_batch_email extends Component {
 	constructor() {
 		super();
+		this.startup();
 		var newLine = "\r\n";
 		this.state = {
 			sending_mail: false,
@@ -19,13 +20,15 @@ class send_batch_email extends Component {
 			confirmed_case_ic_num: null,
 			group_id: null,
 			group_id_verified: false,
+			verify_token: false,
+			send_to: "premise_owner",
 			email_subject: "Inform about Casual Contact with COVID-19 patient",
 			email_content:
 				"Good day," +
 				newLine +
 				newLine +
-				"Sorry to inform that you or/and your have been in casual contact with one of the COVID-19 patient. " +
-				"Please avoid close contact with others if possible until you get further instructions. " +
+				"Sorry to inform that one of the COVID-19 patient have checked in to your premise. " +
+				"Please wait for further instructions. " +
 				"The medical team of Ministry of Health (MOH) Malaysia will contact you soon." +
 				newLine +
 				newLine +
@@ -37,11 +40,39 @@ class send_batch_email extends Component {
 		};
 	}
 
+	startup = async () => {
+		await fetch("/verifyToken", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({}),
+		})
+			.then((res) => {
+				// console.log(JSON.stringify(res.headers));
+				return res.text();
+			})
+			.then((jsonData) => {
+				// alert(JSON.stringify(jsonData));
+				if (jsonData === "failed") {
+					this.setState({ verify_token: false });
+					window.location.href = "/";
+				} else if (jsonData === "success") {
+					this.setState({ verify_token: true });
+				} else if (jsonData === "failed_first_login") {
+					this.setState({ verify_token: false });
+					window.location.href = "/change_password_first_login";
+				}
+			})
+			.catch((error) => {
+				alert("Error: " + error);
+			});
+	};
+
 	// signals that the all components have rendered properly
 	componentDidMount = async () => {
 		// var email_content = document.getElementById("email_content");
 		// var newLine = "\r\n";
-
 		// var content =
 		// 	"Good day," +
 		// 	newLine +
@@ -56,7 +87,6 @@ class send_batch_email extends Component {
 		// 	"Medical Team from MOH" +
 		// 	newLine +
 		// 	"COVID-19 Contact Tracing System";
-
 		// email_content.value = content;
 	};
 
@@ -85,6 +115,9 @@ class send_batch_email extends Component {
 				// alert(JSON.stringify(jsonData));
 				if (!jsonData) {
 					alert("Confirmed case record not found.");
+					this.setState({
+						group_id_verified: false,
+					});
 				} else {
 					if (jsonData.hasOwnProperty("confirmed_case_visitor")) {
 						// alert(JSON.stringify(item.confirmed_case_visitor));
@@ -122,6 +155,7 @@ class send_batch_email extends Component {
 			group_id,
 			email_subject,
 			email_content,
+			send_to,
 		} = this.state;
 
 		if (!group_id_verified) {
@@ -142,36 +176,107 @@ class send_batch_email extends Component {
 		}
 
 		this.setState({ sending_mail: true });
+		// alert(send_to);
+		if (send_to == "casual_contact") {
+			await fetch("/send_batch_email_casual_contact", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					group_id: group_id,
+					email_subject: email_subject,
+					email_content: email_content,
+				}),
+			})
+				.then((res) => {
+					// console.log(JSON.stringify(res.headers));
+					return res.text();
+				})
+				.then((response) => {
+					if (response == "success") {
+						alert("Email has been sent to all the casual contacts");
+						window.location.reload();
+					} else if (response == "send_email_failed") {
+						alert("Email failed to send");
+					} else {
+						alert(response);
+					}
+					this.setState({ sending_mail: false });
+				})
+				.catch((error) => {
+					alert("Error: " + error);
+				});
+		} else if (send_to == "premise_owner") {
+			await fetch("/send_batch_email_premise_owner", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					group_id: group_id,
+					email_subject: email_subject,
+					email_content: email_content,
+				}),
+			})
+				.then((res) => {
+					// console.log(JSON.stringify(res.headers));
+					return res.text();
+				})
+				.then((response) => {
+					if (response == "success") {
+						alert("Email has been sent to all the affected premise owner");
+						window.location.reload();
+					} else if (response == "send_email_failed") {
+						alert("Email failed to send");
+					} else {
+						alert(response);
+					}
+					this.setState({ sending_mail: false });
+				})
+				.catch((error) => {
+					alert("Error: " + error);
+				});
+		}
+	};
 
-		await fetch("/send_batch_email", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				group_id: group_id,
-				email_subject: email_subject,
-				email_content: email_content,
-			}),
-		})
-			.then((res) => {
-				// console.log(JSON.stringify(res.headers));
-				return res.text();
-			})
-			.then((response) => {
-				if (response == "success") {
-					alert("Email has been sent to all the casual contacts");
-					window.location.reload();
-				} else if (response == "send_email_failed") {
-					alert("Email failed to send");
-				} else {
-					alert(response);
-				}
-				this.setState({ sending_mail: false });
-			})
-			.catch((error) => {
-				alert("Error: " + error);
+	send_to_onChange = () => {
+		var newLine = "\r\n";
+		if (this.state.send_to == "premise_owner") {
+			this.setState({
+				email_content:
+					"Good day," +
+					newLine +
+					newLine +
+					"Sorry to inform that one of the COVID-19 patient have checked in to your premise. " +
+					"Please wait for further instructions. " +
+					"The medical team of Ministry of Health (MOH) Malaysia will contact you soon." +
+					newLine +
+					newLine +
+					"Regards," +
+					newLine +
+					"Medical Team from MOH" +
+					newLine +
+					"COVID-19 Contact Tracing System",
 			});
+		} else if (this.state.send_to == "casual_contact") {
+			this.setState({
+				email_content:
+					"Good day," +
+					newLine +
+					newLine +
+					"Sorry to inform that you or/and your dependent have been in casual contact with one of the COVID-19 patient. " +
+					"Please avoid close contact with others if possible until you get further instructions. " +
+					"The medical team of Ministry of Health (MOH) Malaysia will contact you soon." +
+					newLine +
+					newLine +
+					"Regards," +
+					newLine +
+					"Medical Team from MOH" +
+					newLine +
+					"COVID-19 Contact Tracing System",
+			});
+		}
 	};
 
 	render() {
@@ -183,7 +288,12 @@ class send_batch_email extends Component {
 			group_id,
 			email_subject,
 			email_content,
+			send_to,
+			group_id_verified,
+			verify_token,
 		} = this.state;
+
+		if (!verify_token) return <div />;
 
 		return (
 			<div class="">
@@ -222,19 +332,56 @@ class send_batch_email extends Component {
 						</button>
 					</div>
 
-					{confirmed_case_ic_num == null || confirmed_case_name == null ? (
-						<br />
+					{confirmed_case_ic_num == null ||
+					confirmed_case_name == null ||
+					confirmed_case_date_created == null ||
+					group_id_verified == false ? (
+						<div class="row mb-3">
+							<div class="col-sm-2"></div>
+							<div class="record_no_confirm_batch_mail">
+								<h5>Please confirm the Confirmed Case Record</h5>
+							</div>
+						</div>
 					) : (
 						<div class="row mb-3">
 							<div class="col-sm-2"></div>
-							<div>
-								{/* <h5>Confirmed Case Record Info</h5> */}
-								<p>{confirmed_case_name}</p>
-								<p>{confirmed_case_ic_num}</p>
-								<p>{confirmed_case_date_created}</p>
+							<div class="record_confirmed_batch_mail">
+								<h5>Confirmed Case Record has been confirmed</h5>
+								<p>{"Confirmed Case Name: " + confirmed_case_name}</p>
+								<p>{"Confirmed Case IC No.: " + confirmed_case_ic_num}</p>
+								<p>{"Date created: " + confirmed_case_date_created}</p>
 							</div>
 						</div>
 					)}
+
+					<div class="row mb-3">
+						<h5 class="col-sm-2">Send To</h5>
+						<select
+							class="form-control col-sm-5"
+							name="place_state"
+							id="place_state"
+							ref="place_state"
+							value={this.state.send_to}
+							onChange={(e) => {
+								this.state.send_to = e.target.value;
+								this.send_to_onChange();
+							}}
+						>
+							<option
+								selected={send_to == "premise_owner"}
+								value="premise_owner"
+							>
+								Premise Owner
+							</option>
+							<option
+								selected={send_to == "premise_owner"}
+								value="casual_contact"
+							>
+								Casual Contact
+							</option>
+						</select>
+					</div>
+					<br />
 
 					<div class="row mb-3">
 						<h5 class="col-sm-2">Email Subject</h5>

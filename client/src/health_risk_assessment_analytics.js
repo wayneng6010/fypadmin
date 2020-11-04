@@ -13,13 +13,14 @@ import { Bar, Pie } from "react-chartjs-2";
 class health_risk_assessment_analytics extends Component {
 	constructor() {
 		super();
-		// this.startup();
+		this.startup();
 		this.state = {
 			hra_responses_yes: null,
 			hra_responses_no: null,
 			hra_results: null,
 			hra_gender: null,
 			hra_age: null,
+			verify_token: false,
 		};
 	}
 
@@ -112,32 +113,32 @@ class health_risk_assessment_analytics extends Component {
 	};
 
 	startup = async () => {
-		// await fetch("/testing", {
-		// 	method: "POST",
-		// 	headers: {
-		// 		"Content-Type": "application/json",
-		// 	},
-		// 	body: JSON.stringify({
-		// 		visitor_id: "991004-07-5721",
-		// 		date_from: "2020-08-24T13:54:36.038+00:00",
-		// 	}),
-		// })
-		// 	.then((res) => {
-		// 		// console.log(JSON.stringify(res.headers));
-		// 		return res.json();
-		// 	})
-		// 	.then((jsonData) => {
-		// 		alert(JSON.stringify(jsonData));
-		// 		// if (jsonData) {
-		// 		// 	alert("Login successful");
-		// 		// 	// this.props.navigation.navigate("visitor_home");
-		// 		// } else {
-		// 		// 	alert("Phone number or password is incorrect");
-		// 		// }
-		// 	})
-		// 	.catch((error) => {
-		// 		alert("Error: " + error);
-		// 	});
+		await fetch("/verifyToken", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({}),
+		})
+			.then((res) => {
+				// console.log(JSON.stringify(res.headers));
+				return res.text();
+			})
+			.then((jsonData) => {
+				// alert(JSON.stringify(jsonData));
+				if (jsonData === "failed") {
+					this.setState({ verify_token: false });
+					window.location.href = "/";
+				} else if (jsonData === "success") {
+					this.setState({ verify_token: true });
+				} else if (jsonData === "failed_first_login") {
+					this.setState({ verify_token: false });
+					window.location.href = "/change_password_first_login";
+				}
+			})
+			.catch((error) => {
+				alert("Error: " + error);
+			});
 	};
 
 	handleClose = () => {
@@ -160,7 +161,10 @@ class health_risk_assessment_analytics extends Component {
 			hra_responses_yes,
 			hra_responses_no,
 			hra_results,
+			verify_token,
 		} = this.state;
+
+		if (!verify_token) return <div />;
 
 		// gender
 		var data_gender;
@@ -196,11 +200,11 @@ class health_risk_assessment_analytics extends Component {
 				datasets: [
 					{
 						label: "Age Range",
-						backgroundColor: "rgba(173,131,110,0.2)",
-						borderColor: "rgba(173,131,110,1)",
+						backgroundColor: "rgba(50, 88, 168,0.2)",
+						borderColor: "rgba(50, 88, 168,1)",
 						borderWidth: 1,
-						hoverBackgroundColor: "rgba(173,131,110,0.4)",
-						hoverBorderColor: "rgba(173,131,110,1)",
+						hoverBackgroundColor: "rgba(50, 88, 168,0.4)",
+						hoverBorderColor: "rgba(50, 88, 168,1)",
 						data: hra_age,
 					},
 				],
@@ -247,11 +251,11 @@ class health_risk_assessment_analytics extends Component {
 					{
 						data: hra_results,
 						backgroundColor: [
-							"rgba(255, 99, 132, 0.5)",
+							"rgba(255,99,132, 0.5)",
 							"rgba(161, 237, 172, 0.5)",
 						],
 						hoverBackgroundColor: [
-							"rgba(255, 99, 132, 1)",
+							"rgba(255,99,132, 1)",
 							"rgba(161, 237, 172, 1)",
 						],
 					},
@@ -279,6 +283,7 @@ class health_risk_assessment_analytics extends Component {
 								Respondent Demographic Overview
 							</h4>
 							<br />
+							<h5>{"Total number of respondent: " + parseInt(hra_gender[0] + hra_gender[1])}</h5>
 							<div class="row px-3">
 								<div class="col-sm-6">
 									<Pie width={500} height={300} data={data_gender} />

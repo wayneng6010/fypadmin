@@ -12,7 +12,7 @@ import { Link } from "react-router-dom";
 class search_casual_contacts extends Component {
 	constructor() {
 		super();
-		// this.startup();
+		this.startup();
 		this.state = {
 			confirmed_case_ic_num: null,
 			confirmed_case_info: null,
@@ -33,6 +33,7 @@ class search_casual_contacts extends Component {
 			ttl_check_ins: null,
 			loading_confirmed_case_info: false,
 			loading_confirmed_case_check_in: false,
+			verify_token: false,
 		};
 	}
 
@@ -40,28 +41,28 @@ class search_casual_contacts extends Component {
 	componentDidMount() {}
 
 	startup = async () => {
-		await fetch("/testing", {
+		await fetch("/verifyToken", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 			},
-			body: JSON.stringify({
-				visitor_id: "991004-07-5721",
-				date_from: "2020-08-24T13:54:36.038+00:00",
-			}),
+			body: JSON.stringify({}),
 		})
 			.then((res) => {
 				// console.log(JSON.stringify(res.headers));
-				return res.json();
+				return res.text();
 			})
 			.then((jsonData) => {
-				alert(JSON.stringify(jsonData));
-				// if (jsonData) {
-				// 	alert("Login successful");
-				// 	// this.props.navigation.navigate("visitor_home");
-				// } else {
-				// 	alert("Phone number or password is incorrect");
-				// }
+				// alert(JSON.stringify(jsonData));
+				if (jsonData === "failed") {
+					this.setState({ verify_token: false });
+					window.location.href = "/";
+				} else if (jsonData === "success") {
+					this.setState({ verify_token: true });
+				} else if (jsonData === "failed_first_login") {
+					this.setState({ verify_token: false });
+					window.location.href = "/change_password_first_login";
+				}
 			})
 			.catch((error) => {
 				alert("Error: " + error);
@@ -164,6 +165,7 @@ class search_casual_contacts extends Component {
 				this.setState({
 					checked_in_premise: checked_in_premise,
 					ttl_contact_counts: ttl_contact_counter,
+					loading_confirmed_case_check_in: false,
 				});
 			})
 			.catch((error) => {
@@ -206,6 +208,7 @@ class search_casual_contacts extends Component {
 				this.setState({
 					checked_in_premise: checked_in_premise,
 					ttl_contact_counts: ttl_contact_counter,
+					loading_confirmed_case_check_in: false,
 				});
 			})
 			.catch((error) => {
@@ -347,11 +350,16 @@ class search_casual_contacts extends Component {
 						ttl_contact_counts: null,
 					});
 					alert("User not found in the database");
+					this.setState({
+						loading_confirmed_case_info: false,
+						loading_confirmed_case_check_in: false,
+					});
 					return;
 				} else {
 					this.setState({
 						confirmed_case_info: jsonData,
 						confirmed_case_user_type: "Dependent",
+						loading_confirmed_case_info: false,
 					});
 					this.search_check_in_records_dependent(
 						ic_number,
@@ -487,6 +495,36 @@ class search_casual_contacts extends Component {
 			check_in_time_range_after_min = this.refs.check_in_time_range_after_min
 				.value;
 
+		// data validation
+		var regex_ic_number = /^[0-9]{6}[-]{1}[0-9]{2}[-]{1}[0-9]{4}$/;
+		if (!regex_ic_number.test(ic_number)) {
+			alert("Invalid IC format. Correct format should be xxxxxx-xx-xxxx");
+			return;
+		}
+		if (check_in_day_range > 20) {
+			alert("Check in day range should be more than 20 days");
+			return;
+		}
+		if (
+			check_in_time_range_before_hr > 48 ||
+			check_in_time_range_after_hr > 48
+		) {
+			alert("Time range hour should be more than 48 hours");
+			return;
+		}
+		if (
+			check_in_time_range_before_min > 59 ||
+			check_in_time_range_after_min > 59
+		) {
+			alert("Time range minute should be more than 48 hours");
+			return;
+		}
+
+		this.setState({
+			loading_confirmed_case_info: true,
+			loading_confirmed_case_check_in: true,
+		});
+
 		var currentTime = new Date();
 		currentTime = new Date(
 			currentTime.getTime() - currentTime.getTimezoneOffset() * 60000
@@ -544,6 +582,7 @@ class search_casual_contacts extends Component {
 					this.setState({
 						confirmed_case_info: jsonData,
 						confirmed_case_user_type: "Visitor",
+						loading_confirmed_case_info: false,
 					});
 					this.search_check_in_records_visitor(
 						ic_number,
@@ -664,7 +703,13 @@ class search_casual_contacts extends Component {
 			traceFromDate,
 			casual_contact_counter,
 			ttl_check_ins,
+			loading_confirmed_case_check_in,
+			loading_confirmed_case_info,
+			verify_token,
 		} = this.state;
+
+		if (!verify_token) return <div />;
+
 		return (
 			<div class="">
 				<NavBar />
@@ -913,8 +958,10 @@ class search_casual_contacts extends Component {
 							value="Search"
 						/>
 					</form>
-					{confirmed_case_info === null ||
-					this.state.confirmed_case_user_type === null ? (
+					{loading_confirmed_case_info === true ? (
+						<p>Loading...</p>
+					) : confirmed_case_info === null ||
+					  this.state.confirmed_case_user_type === null ? (
 						<p></p>
 					) : (
 						<div id="confirmed_case_info_outer">
@@ -928,6 +975,8 @@ class search_casual_contacts extends Component {
 					)}
 					{checked_in_premise === "none" ? (
 						<h5>No check in found</h5>
+					) : loading_confirmed_case_check_in === true ? (
+						<p>Loading...</p>
 					) : checked_in_premise === null ||
 					  casual_contacts_visitors === null ||
 					  ttl_contact_counts === null ? (
@@ -954,18 +1003,20 @@ class search_casual_contacts extends Component {
 						// ))
 
 						<div class="casual_contacts_outer">
-							<h5>
-								{"Traced check ins from " +
-									traceFromDate +
-									" to " +
-									traceUntilDate}
-							</h5>
-							<h5>{"Total Check Ins: " + ttl_check_ins + " check in(s)"}</h5>
-							<h5>
-								{"Total Number of Casual Contacts: " +
-									ttl_contact_counts +
-									" contact(s)"}
-							</h5>
+							<div class="casual_contacts_trace_info">
+								<h5>
+									{"Traced check ins from " +
+										traceFromDate +
+										" to " +
+										traceUntilDate}
+								</h5>
+								<h5>{"Total Check Ins: " + ttl_check_ins + " check in(s)"}</h5>
+								<h5>
+									{"Total Number of Casual Contacts: " +
+										ttl_contact_counts +
+										" contact(s)"}
+								</h5>
+							</div>
 
 							<br />
 							<ReactTable
@@ -984,12 +1035,12 @@ class search_casual_contacts extends Component {
 									{
 										Header: "Time Range (From)",
 										accessor: "time_from",
-										Cell: (row) => <div class="table_column">{row.value}</div>,
+										Cell: (row) => <div class="table_column_grey">{row.value}</div>,
 									},
 									{
 										Header: "Time Range (To)",
 										accessor: "time_to",
-										Cell: (row) => <div class="table_column">{row.value}</div>,
+										Cell: (row) => <div class="table_column_grey">{row.value}</div>,
 									},
 									{
 										Header: "Number of Contacts",

@@ -17,6 +17,8 @@ const healthRiskAssessmentRecord = require("./Schema")
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+var sanitize = require("mongo-sanitize");
+
 var path = require("path");
 
 // cookie parser
@@ -460,6 +462,23 @@ app.post("/get_hra_age_count", async (req, res) => {
 	});
 });
 
+app.post("/getDashboardData", async (req, res) => {
+	var dashboard_data = new Array();
+	const ttl_confrimed_case = await savedCasualContactsGroup.countDocuments();
+	const ttl_casual_contact = await savedCasualContactCheckIn.countDocuments();
+	const ttl_hotspot = await hotspot.countDocuments();
+	const ttl_hra_respondent = await healthRiskAssessmentRecord.countDocuments();
+	const ttl_staff = await staff.countDocuments();
+
+	dashboard_data[0] = ttl_casual_contact;
+	dashboard_data[1] = ttl_hotspot;
+	dashboard_data[2] = ttl_hra_respondent;
+	dashboard_data[3] = ttl_staff;
+	dashboard_data[4] = ttl_confrimed_case;
+
+	res.send(dashboard_data);
+});
+
 app.post("/getCheckInCount", async (req, res) => {
 	var counter = 0;
 	var groupRecord = req.body.groupRecord;
@@ -589,7 +608,7 @@ app.post("/getSavedHotspot_manual_added", async (req, res) => {
 
 app.get("/searchLocation", (req, res) => {
 	const search_query = req.query.search_query;
-	const api_key = "api_key";
+	const api_key = "tempapikey";
 	const querystr = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${search_query}&components=country:my&types=establishment&key=${api_key}`;
 	axios
 		.get(querystr)
@@ -604,7 +623,7 @@ app.get("/searchLocation", (req, res) => {
 
 app.get("/getSearchLocation", (req, res) => {
 	const place_id = req.query.place_id;
-	const api_key = "api_key";
+	const api_key = "tempapikey";
 	// const querystr = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${home_address}&key=${api_key}`;
 	const querystr = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place_id}&fields=geometry&key=${api_key}`;
 
@@ -634,6 +653,211 @@ app.get("/getSearchLocation", (req, res) => {
 // 	);
 // });
 
+app.post("/search_casual_contact_group", async (req, res) => {
+	var checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
+	var savedGroups;
+
+	if (checkForHexRegExp.test(req.body.search_query)) {
+		savedGroups = await savedCasualContactsGroup
+			.find({ _id: req.body.search_query })
+			.populate("confirmed_case_visitor")
+			.populate("confirmed_case_dependent")
+			.populate("staff")
+			.exec();
+	}
+	// else {
+	// 	try {
+	// 		savedGroups = await savedCasualContactsGroup
+	// 			.find()
+	// 			.populate({
+	// 				path: "confirmed_case_visitor",
+	// 				match: {
+	// 					ic_fname: { $regex: new RegExp(req.body.search_query, "i") },
+	// 				},
+	// 			})
+	// 			.populate("confirmed_case_dependent")
+	// 			.populate("staff")
+	// 			.exec();
+	// 	} catch (err) {
+	// 		savedGroups = await savedCasualContactsGroup
+	// 			.find()
+	// 			.populate("confirmed_case_visitor")
+	// 			.populate({
+	// 				path: "confirmed_case_dependent",
+	// 				match: {
+	// 					ic_fname: { $regex: new RegExp(req.body.search_query, "i") },
+	// 				},
+	// 			})
+	// 			.populate("staff")
+	// 			.exec();
+	// 	}
+	// }
+
+	if (!savedGroups) {
+		return res.send(false);
+	}
+
+	res.send(savedGroups);
+});
+
+app.post("/search_confirmed_case_check_in", async (req, res) => {
+	var checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
+	var savedCheckIn;
+
+	if (checkForHexRegExp.test(req.body.search_query)) {
+		savedCheckIn = await savedConfirmedCaseCheckIn
+			.find({
+				$and: [
+					{ saved_casual_contacts_group: req.body.group_record_id },
+					{ _id: req.body.search_query },
+				],
+			})
+			// .populate("check_in_record")
+			.populate({
+				path: "check_in_record",
+				populate: {
+					path: "premise_qr_code",
+					select: "entry_point",
+				},
+			})
+			.populate("user_premiseowner")
+			.exec();
+	} else {
+		savedCheckIn = await savedConfirmedCaseCheckIn
+			.find({
+				saved_casual_contacts_group: req.body.group_record_id,
+			})
+			// .populate("check_in_record")
+			.populate({
+				path: "check_in_record",
+				populate: {
+					path: "premise_qr_code",
+					select: "entry_point",
+				},
+			})
+			.populate({
+				path: "user_premiseowner",
+				match: {
+					$or: [
+						{
+							premise_name: { $regex: new RegExp(req.body.search_query, "i") },
+						},
+						{
+							premise_state: { $regex: new RegExp(req.body.search_query, "i") },
+						},
+					],
+				},
+			})
+			.exec();
+	}
+
+	var filteredRecord = savedCheckIn.filter(function (item) {
+		return item.user_premiseowner !== null;
+	});
+
+	// console.log(filteredRecord);
+	if (!filteredRecord) {
+		return res.send(false);
+	}
+	res.send(filteredRecord);
+});
+
+app.post("/search_casual_contact_check_in", async (req, res) => {
+	// console.log(req.body.check_in_id);
+	var checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
+	var savedCheckIn;
+
+	if (checkForHexRegExp.test(req.body.search_query)) {
+		savedCheckIn = await savedCasualContactCheckIn
+			// .find({ saved_confirmed_case_check_in: req.body.check_in_id })
+			.find({
+				$and: [
+					{
+						saved_confirmed_case_check_in: req.body.check_in_id,
+					},
+					{ saved_casual_contacts_group: req.body.check_in_group_id },
+					{ _id: req.body.search_query },
+				],
+			})
+			.populate({
+				path: "check_in_record",
+				populate: {
+					path: "premise_qr_code",
+					select: "entry_point",
+				},
+			})
+			.populate("user_visitor")
+			.populate("visitor_dependent")
+			.exec();
+	}
+
+	if (!savedCheckIn) {
+		return res.send(false);
+	}
+	res.send(savedCheckIn);
+});
+
+app.post("/search_manual_added_hotspot", async (req, res) => {
+	const savedHotspot = await hotspot
+		.find({
+			$and: [
+				{
+					type: "manual_added",
+				},
+				{
+					$or: [
+						{ place_name: { $regex: new RegExp(req.body.search_query, "i") } },
+						{
+							place_address: { $regex: new RegExp(req.body.search_query, "i") },
+						},
+						{ place_state: { $regex: new RegExp(req.body.search_query, "i") } },
+						{ description: { $regex: new RegExp(req.body.search_query, "i") } },
+						{ remark: { $regex: new RegExp(req.body.search_query, "i") } },
+					],
+				},
+			],
+		})
+		.exec();
+
+	if (!savedHotspot) {
+		return res.send(false);
+	}
+	res.send(savedHotspot);
+});
+
+app.post("/search_saved_hotspot_premise", async (req, res) => {
+	const savedHotspot = await hotspot
+		.find({
+			$and: [
+				{
+					saved_casual_contacts_group: req.body.group_record_id,
+				},
+				{ type: "premise" },
+			],
+		})
+		.populate("check_in_record")
+		// .populate("user_premiseowner")
+		.populate({
+			path: "user_premiseowner",
+			match: {
+				$or: [
+					{ premise_name: { $regex: new RegExp(req.body.search_query, "i") } },
+					{ premise_state: { $regex: new RegExp(req.body.search_query, "i") } },
+				],
+			},
+		})
+		.exec();
+
+	var filteredRecord = savedHotspot.filter(function (item) {
+		return item.user_premiseowner !== null;
+	});
+
+	if (!filteredRecord) {
+		return res.send(false);
+	}
+	res.send(filteredRecord);
+});
+
 app.post("/search_staff_list", async (req, res) => {
 	var checkForHexRegExp = new RegExp("^[0-9a-fA-F]{24}$");
 	var savedStaff;
@@ -642,7 +866,7 @@ app.post("/search_staff_list", async (req, res) => {
 		savedStaff = await staff.find({
 			$or: [
 				{ _id: req.body.search_query },
-				{ fname: { $regex: new RegExp(req.body.search_query, "i") } },
+				{ fname: { $regex: new RegExp(req.body.search_query, "i") } }, // case insensitive
 				{ email: { $regex: req.body.search_query } },
 			],
 		});
@@ -674,19 +898,32 @@ app.post("/delete_staff", (req, res) => {
 });
 
 app.post("/change_staff_role", async (req, res) => {
-	const savedStaff = await staff.findOne({ _id: req.body.sid });
+	const staff_id = req.cookies["sid"];
+	// const savedStaff = await staff.findOne({ _id: req.body.sid });
 
-	var new_role;
-	if (savedStaff.role == 1) {
-		new_role = 0;
-	} else {
-		new_role = 1;
-	}
+	// var new_role;
+	// if (savedStaff.role == 1) {
+	// 	new_role = 0;
+	// } else {
+	// 	new_role = 1;
+	// }
+
+	staff.findOneAndUpdate(
+		{ _id: staff_id },
+		{
+			$set: { role: 0 },
+		},
+		{ new: true },
+		(err, place) => {
+			if (err) return res.send("failed");
+			// return res.send("success");
+		}
+	);
 
 	staff.findOneAndUpdate(
 		{ _id: req.body.sid },
 		{
-			$set: { role: new_role },
+			$set: { role: 1 },
 		},
 		{ new: true },
 		(err, place) => {
@@ -709,6 +946,17 @@ app.post("/get_own_profile_details", async (req, res) => {
 
 app.post("/update_own_phone_number", async (req, res) => {
 	const staff_id = req.cookies["sid"];
+
+	// check if phone number exist
+	const staff_info = await staff.findOne({
+		$and: [
+			{ _id: { $ne: req.cookies["sid"] } },
+			{ phone_no: req.body.updated_phone_no },
+		],
+	});
+	if (staff_info) {
+		return res.send("failed");
+	}
 
 	staff.findOneAndUpdate(
 		{ _id: staff_id },
@@ -733,7 +981,7 @@ app.post("/get_all_staff", async (req, res) => {
 	res.send(savedStaff);
 });
 
-app.post("/send_batch_email", async (req, res) => {
+app.post("/send_batch_email_casual_contact", async (req, res) => {
 	const savedCasualContact = await savedCasualContactCheckIn
 		.find({
 			saved_casual_contacts_group: req.body.group_id,
@@ -745,6 +993,64 @@ app.post("/send_batch_email", async (req, res) => {
 	savedCasualContact.forEach(async function (item) {
 		// console.log(item.user_visitor.email);
 		email_list_arr.push(item.user_visitor.email);
+	});
+	var email_list = email_list_arr.join();
+
+	var transporter = nodemailer.createTransport({
+		service: "gmail",
+		auth: {
+			user: "wayne.ng6010@gmail.com",
+			pass: "ozuueiwutugbeakc",
+		},
+	});
+
+	// const email =
+	// 	"p19011719@student.newinti.edu.my, wayne.ng6010@gmail.com, p19011719@student.newinti.edu.my";
+
+	var mailOptions = {
+		from: "wayne.ng6010@gmail.com",
+		// to: email,
+		subject: req.body.email_subject,
+		html: req.body.email_content
+			.split("\n")
+			.join("<br>")
+			.split(" ")
+			.join("&nbsp;"),
+		envelope: {
+			from: "wayne.ng6010@gmail.com",
+			to: email_list,
+		},
+	};
+
+	transporter.sendMail(mailOptions, async function (error, info) {
+		if (error) {
+			// console.log(error);
+			res.send("send_email_failed");
+		} else {
+			res.send("success");
+			// console.log("Email sent: " + info.response);
+		}
+	});
+});
+
+app.post("/send_batch_email_premise_owner", async (req, res) => {
+	const savedAffectedPremiseOwner = await savedConfirmedCaseCheckIn
+		.find({
+			saved_casual_contacts_group: req.body.group_id,
+		})
+		.populate({
+			path: "check_in_record",
+			populate: {
+				path: "user_premiseowner",
+				select: "email",
+			},
+		})
+		.exec();
+
+	var email_list_arr = new Array();
+	savedAffectedPremiseOwner.forEach(async function (item) {
+		// console.log(item.user_visitor.email);
+		email_list_arr.push(item.check_in_record.user_premiseowner.email);
 	});
 	var email_list = email_list_arr.join();
 
@@ -797,7 +1103,7 @@ app.post("/add_new_staff", async (req, res) => {
 	const savedStaff = new staff({
 		fname: fname,
 		email: email,
-		role: role,
+		role: 0,
 		password: hashed_psw,
 		first_login: true,
 		date_created: new Date(now.getTime() + 480 * 60000),
@@ -806,15 +1112,16 @@ app.post("/add_new_staff", async (req, res) => {
 		const newStaff = await savedStaff.save();
 		// res.send("success");
 	} catch (error) {
+		// console.log(error);
 		res.send("email_existed");
 		process.exit();
 	}
 
-	if (role == 1) {
-		assigned_role = "ADMIN";
-	} else if (role == 0) {
-		assigned_role = "STAFF";
-	}
+	// if (role == 1) {
+	// assigned_role = "ADMIN";
+	// } else if (role == 0) {
+	var assigned_role = "STAFF";
+	// }
 
 	var transporter = nodemailer.createTransport({
 		service: "gmail",
@@ -971,7 +1278,14 @@ app.post("/getConfirmedCaseCheckIns", async (req, res) => {
 	// console.log(req.body.group_record_id);
 	const savedCheckIns = await savedConfirmedCaseCheckIn
 		.find({ saved_casual_contacts_group: req.body.group_record_id })
-		.populate("check_in_record")
+		// .populate("check_in_record")
+		.populate({
+			path: "check_in_record",
+			populate: {
+				path: "premise_qr_code",
+				select: "entry_point",
+			},
+		})
 		.populate("user_premiseowner")
 		.exec();
 
@@ -992,7 +1306,14 @@ app.post("/getSelectedConfirmedCaseCheckIns", async (req, res) => {
 				{ check_in_record: req.body.check_in_id },
 			],
 		})
-		.populate("check_in_record")
+		// .populate("check_in_record")
+		.populate({
+			path: "check_in_record",
+			populate: {
+				path: "premise_qr_code",
+				select: "entry_point",
+			},
+		})
 		.populate("user_premiseowner")
 		.exec();
 
@@ -1505,8 +1826,11 @@ app.post("/search_casual_contacts_dependent", async (req, res) => {
 
 //localhost:5000/login
 app.post("/login", async (req, res) => {
+	var email_sanitized = sanitize(req.body.user.email);
+	var password_sanitized = sanitize(req.body.user.psw);
+
 	// check if email exist
-	const staff_info = await staff.findOne({ email: req.body.user.email });
+	const staff_info = await staff.findOne({ email: email_sanitized });
 	if (!staff_info) {
 		return res.send("failed");
 	}
@@ -1524,7 +1848,10 @@ app.post("/login", async (req, res) => {
 	}
 
 	// check if password correct
-	const validPsw = await bcrypt.compare(req.body.user.psw, staff_info.password);
+	const validPsw = await bcrypt.compare(
+		password_sanitized,
+		staff_info.password
+	);
 	if (!validPsw) {
 		return res.send("failed");
 	}
@@ -1534,9 +1861,10 @@ app.post("/login", async (req, res) => {
 
 	// save token and user id to cookie
 	res.cookie("auth-token", token); // to verify if user have login
-	res.cookie("sid", staff_info._id); // while be used while saving artist
+	res.cookie("sid", staff_info._id); // staff id
 	res.cookie("fname", staff_info.fname); // will be display on navigation bar (logged in as UserName)
 	res.cookie("last_login", staff_info.last_login); // will be display on navigation bar (last login)
+	res.cookie("role", staff_info.role); // staff role
 
 	// console.log(req.cookies["last_login"]);
 
@@ -1550,9 +1878,10 @@ app.post("/login", async (req, res) => {
 app.post("/getLoginDetails", async (req, res) => {
 	const fname = req.cookies["fname"];
 	const last_login = req.cookies["last_login"];
+	const role = req.cookies["role"];
 
 	var login_details = new Array();
-	login_details.push({ fname: fname, last_login: last_login });
+	login_details.push({ fname: fname, last_login: last_login, role: role });
 
 	res.send(login_details);
 });
@@ -1594,12 +1923,12 @@ app.post("/verifyToken", async (req, res) => {
 		// store user ID and time of token issued to indicate that the user is authenticated
 		req.user = verified;
 
-		// is it first login
 		const staff_info = await staff.findOne({ _id: sid });
 		if (!staff_info) {
 			return res.send("failed");
 		}
 
+		// is it first login
 		if (staff_info.first_login == true) {
 			return res.send("failed_first_login");
 		}

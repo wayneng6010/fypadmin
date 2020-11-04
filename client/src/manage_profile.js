@@ -10,12 +10,14 @@ import { Link } from "react-router-dom";
 class manage_profile extends Component {
 	constructor() {
 		super();
+		this.verifyToken();
 		this.state = {
 			profile_details: null,
 			updated_phone_no: null,
 			current_psw: null,
 			new_psw: null,
 			con_new_psw: null,
+			verify_token: false,
 		};
 	}
 
@@ -23,6 +25,35 @@ class manage_profile extends Component {
 	componentDidMount() {
 		this.startup();
 	}
+
+	verifyToken = async () => {
+		await fetch("/verifyToken", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({}),
+		})
+			.then((res) => {
+				// console.log(JSON.stringify(res.headers));
+				return res.text();
+			})
+			.then((jsonData) => {
+				// alert(JSON.stringify(jsonData));
+				if (jsonData === "failed") {
+					this.setState({ verify_token: false });
+					window.location.href = "/";
+				} else if (jsonData === "success") {
+					this.setState({ verify_token: true });
+				} else if (jsonData === "failed_first_login") {
+					this.setState({ verify_token: false });
+					window.location.href = "/change_password_first_login";
+				}
+			})
+			.catch((error) => {
+				alert("Error: " + error);
+			});
+	};
 
 	startup = async () => {
 		// alert(this.state.group_record_id);
@@ -121,7 +152,7 @@ class manage_profile extends Component {
 				if (jsonData == "success") {
 					alert("Phone number updated successfully");
 				} else if (jsonData == "failed") {
-					alert("Phone number failed to update");
+					alert("Phone number existed in the other staff's record");
 				}
 			})
 			.catch((error) => {
@@ -185,7 +216,11 @@ class manage_profile extends Component {
 			current_psw,
 			new_psw,
 			con_new_psw,
+			verify_token,
 		} = this.state;
+
+		if (!verify_token) return <div />;
+
 		return (
 			<div class="">
 				<NavBar />
@@ -221,6 +256,7 @@ class manage_profile extends Component {
 									name="phone_no"
 									id="phone_no"
 									ref="phone_no"
+									maxLength={11}
 									value={
 										updated_phone_no == null
 											? profile_details.phone_no

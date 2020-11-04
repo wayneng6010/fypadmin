@@ -12,9 +12,11 @@ import { Link } from "react-router-dom";
 class add_staff extends Component {
 	constructor() {
 		super();
-		// this.startup();
+		this.startup();
 		this.state = {
 			sending_mail: false,
+			verify_token: false,
+			verify_role: false,
 		};
 	}
 
@@ -22,32 +24,55 @@ class add_staff extends Component {
 	componentDidMount() {}
 
 	startup = async () => {
-		// await fetch("/testing", {
-		// 	method: "POST",
-		// 	headers: {
-		// 		"Content-Type": "application/json",
-		// 	},
-		// 	body: JSON.stringify({
-		// 		visitor_id: "991004-07-5721",
-		// 		date_from: "2020-08-24T13:54:36.038+00:00",
-		// 	}),
-		// })
-		// 	.then((res) => {
-		// 		// console.log(JSON.stringify(res.headers));
-		// 		return res.json();
-		// 	})
-		// 	.then((jsonData) => {
-		// 		alert(JSON.stringify(jsonData));
-		// 		// if (jsonData) {
-		// 		// 	alert("Login successful");
-		// 		// 	// this.props.navigation.navigate("visitor_home");
-		// 		// } else {
-		// 		// 	alert("Phone number or password is incorrect");
-		// 		// }
-		// 	})
-		// 	.catch((error) => {
-		// 		alert("Error: " + error);
-		// 	});
+		await fetch("/verifyToken", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({}),
+		})
+			.then((res) => {
+				// console.log(JSON.stringify(res.headers));
+				return res.text();
+			})
+			.then((jsonData) => {
+				// alert(JSON.stringify(jsonData));
+				if (jsonData === "failed") {
+					this.setState({ verify_token: false });
+					window.location.href = "/";
+				} else if (jsonData === "success") {
+					this.setState({ verify_token: true });
+				} else if (jsonData === "failed_first_login") {
+					this.setState({ verify_token: false });
+					window.location.href = "/change_password_first_login";
+				}
+			})
+			.catch((error) => {
+				alert("Error: " + error);
+			});
+
+		await fetch("/getLoginDetails", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({}),
+		})
+			.then((res) => {
+				// console.log(JSON.stringify(res.headers));
+				return res.json();
+			})
+			.then((jsonData) => {
+				// alert(JSON.stringify(jsonData));
+				if (jsonData[0].role == 0) {
+					window.location.href = "/dashboard";
+				} else {
+					this.setState({ verify_role: true });
+				}
+			})
+			.catch((error) => {
+				// alert("Error: " + error);
+			});
 	};
 
 	handleClose = () => {
@@ -124,8 +149,8 @@ class add_staff extends Component {
 	};
 
 	render() {
-		var { sending_mail } = this.state;
-
+		var { sending_mail, verify_token, verify_role } = this.state;
+		if (!verify_token || !verify_role) return <div />;
 		return (
 			<div class="">
 				<NavBar />
@@ -180,10 +205,21 @@ class add_staff extends Component {
 							<div class="label_outer">
 								<label for="role">Role</label>
 							</div>
-							<select className="form-control" name="role" id="role" ref="role">
+							<input
+								placeholder="Role"
+								type="role"
+								className="form-control"
+								name="role"
+								id="role"
+								ref="role"
+								value="Staff"
+								disabled={true}
+								required
+							/>
+							{/* <select className="form-control" name="role" id="role" ref="role">
 								<option value={1}>Admin</option>
 								<option value={0}>Staff</option>
-							</select>
+							</select> */}
 						</div>
 						<br />
 						<br />
