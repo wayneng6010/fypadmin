@@ -608,7 +608,7 @@ app.post("/getSavedHotspot_manual_added", async (req, res) => {
 
 app.get("/searchLocation", (req, res) => {
 	const search_query = req.query.search_query;
-	const api_key = "tempapikey";
+	const api_key = "AIzaSyDV2M6vNxqRZbKeWuJJ4kMyt9K1hOgSvlo";
 	const querystr = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${search_query}&components=country:my&types=establishment&key=${api_key}`;
 	axios
 		.get(querystr)
@@ -623,7 +623,7 @@ app.get("/searchLocation", (req, res) => {
 
 app.get("/getSearchLocation", (req, res) => {
 	const place_id = req.query.place_id;
-	const api_key = "tempapikey";
+	const api_key = "AIzaSyDV2M6vNxqRZbKeWuJJ4kMyt9K1hOgSvlo";
 	// const querystr = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${home_address}&key=${api_key}`;
 	const querystr = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place_id}&fields=geometry&key=${api_key}`;
 
@@ -1829,6 +1829,9 @@ app.post("/login", async (req, res) => {
 	var email_sanitized = sanitize(req.body.user.email);
 	var password_sanitized = sanitize(req.body.user.psw);
 
+	// console.log("Sanitized object: ");
+	// console.log(sanitize({ $ne: 1 }));
+
 	// check if email exist
 	const staff_info = await staff.findOne({ email: email_sanitized });
 	if (!staff_info) {
@@ -1858,6 +1861,7 @@ app.post("/login", async (req, res) => {
 
 	// create and assign a token
 	const token = jwt.sign({ _id: staff_info._id }, "vE7YWqEuJQOXjlKxU7e4SOl");
+	// console.log("JWT assigned: " + token);
 
 	// save token and user id to cookie
 	res.cookie("auth-token", token); // to verify if user have login

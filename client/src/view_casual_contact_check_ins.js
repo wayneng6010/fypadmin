@@ -556,7 +556,7 @@ class view_casual_contact_check_ins extends Component {
 									<GoogleMapReact
 										// bootstrapURLKeys={
 										// 	{
-										// 		key: "tempapikey",
+										// 		key: "AIzaSyDV2M6vNxqRZbKeWuJJ4kMyt9K1hOgSvlo",
 										// 	}
 										// }
 										center={region}

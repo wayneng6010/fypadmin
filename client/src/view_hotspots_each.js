@@ -738,7 +738,7 @@ class view_hotspots_each extends Component {
 											<GoogleMapReact
 												// bootstrapURLKeys={
 												// 	{
-												// 		key: "tempapikey",
+												// 		key: "AIzaSyDV2M6vNxqRZbKeWuJJ4kMyt9K1hOgSvlo",
 												// 	}
 												// }
 												center={region}
@@ -747,7 +747,6 @@ class view_hotspots_each extends Component {
 												<AnyReactComponent
 													lat={place_lat}
 													lng={place_lng}
-													// text="My Marker"
 												/>
 											</GoogleMapReact>
 										</div>
@@ -775,7 +774,7 @@ class view_hotspots_each extends Component {
 					</Modal>
 					{/* <div style={{ height: "100vh", width: "100%" }}>
 						<GoogleMapReact
-							bootstrapURLKeys={{ key: "tempapikey" }}
+							bootstrapURLKeys={{ key: "AIzaSyDV2M6vNxqRZbKeWuJJ4kMyt9K1hOgSvlo" }}
 							defaultCenter={this.props.center}
 							defaultZoom={this.props.zoom}
 						>
