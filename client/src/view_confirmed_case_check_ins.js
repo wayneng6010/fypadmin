@@ -400,7 +400,7 @@ class view_confirmed_case_check_ins extends Component {
 												<GoogleMapReact
 													// bootstrapURLKeys={
 													// 	{
-													// 		key: "AIzaSyDV2M6vNxqRZbKeWuJJ4kMyt9K1hOgSvlo",
+													// 		key: "apikey",
 													// 	}
 													// }
 													center={region}

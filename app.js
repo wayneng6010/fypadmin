@@ -608,7 +608,7 @@ app.post("/getSavedHotspot_manual_added", async (req, res) => {
 
 app.get("/searchLocation", (req, res) => {
 	const search_query = req.query.search_query;
-	const api_key = "AIzaSyDV2M6vNxqRZbKeWuJJ4kMyt9K1hOgSvlo";
+	const api_key = "apikey";
 	const querystr = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${search_query}&components=country:my&types=establishment&key=${api_key}`;
 	axios
 		.get(querystr)
@@ -623,7 +623,7 @@ app.get("/searchLocation", (req, res) => {
 
 app.get("/getSearchLocation", (req, res) => {
 	const place_id = req.query.place_id;
-	const api_key = "AIzaSyDV2M6vNxqRZbKeWuJJ4kMyt9K1hOgSvlo";
+	const api_key = "apikey";
 	// const querystr = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${home_address}&key=${api_key}`;
 	const querystr = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place_id}&fields=geometry&key=${api_key}`;
 
@@ -1565,7 +1565,12 @@ app.post("/search_confirmed_case_info_visitor", async (req, res) => {
 
 app.post("/search_confirmed_case_info_dependent", async (req, res) => {
 	const dependent = await visitorDependent.findOne({
-		ic_num: req.body.ic_number,
+		$and: [
+			{
+				ic_num: req.body.ic_number,
+			},
+			{ active: true },
+		],
 	});
 	if (!dependent) {
 		return res.send(false);
@@ -1575,35 +1580,66 @@ app.post("/search_confirmed_case_info_dependent", async (req, res) => {
 });
 
 app.post("/search_check_in_records_dependent", async (req, res) => {
-	const confirmed_dependent = await visitorDependent.findOne({
+	const confirmed_dependent = await visitorDependent.find({
 		ic_num: req.body.ic_number,
+		// $and: [
+		// 	{
+		// 		ic_num: req.body.ic_number,
+		// 	},
+		// 	{ active: true },
+		// ],
 	});
 	if (!confirmed_dependent) {
 		return res.send(false);
 	} else {
-		var confirmed_dependent_id = confirmed_dependent._id;
-		const check_in_records = await checkInRecord
-			.find({
-				$and: [
-					{
-						// $and: [
-						// { user_visitor: confirmed_dependent_id },
-						// { visitor_dependent: { $exists: false } },
-						visitor_dependent: confirmed_dependent_id,
-						// { visitor_dependent: confirmed_visitor_id  },
-						// ],
-					},
-					// { user_visitor: confirmed_visitor_id },
-					{ date_created: { $gte: new Date(req.body.date_from) } },
-				],
-			})
-			.populate("user_premiseowner")
-			.exec();
+		var check_in_records;
+		var check_in_records_arr = new Array();
+		var counter = 0;
+		confirmed_dependent.forEach(async function (item) {
+			var confirmed_dependent_id = item._id;
 
-		if (!check_in_records) {
-			return res.send(false);
-		}
-		res.send(check_in_records);
+			check_in_records = await checkInRecord
+				.find({
+					$and: [
+						{
+							// $and: [
+							// { user_visitor: confirmed_dependent_id },
+							// { visitor_dependent: { $exists: false } },
+							visitor_dependent: confirmed_dependent_id,
+							// { visitor_dependent: confirmed_visitor_id  },
+							// ],
+						},
+						// { user_visitor: confirmed_visitor_id },
+						{ date_created: { $gte: new Date(req.body.date_from) } },
+					],
+				})
+				.populate("user_premiseowner")
+				.exec();
+
+			// console.log(check_in_records);
+
+			check_in_records.forEach(async function (item) {
+				check_in_records_arr.push({
+					_id: item._id,
+					user_visitor: item.user_visitor,
+					user_premiseowner: item.user_premiseowner,
+					premise_qr_code: item.premise_qr_code,
+					visitor_dependent: item.visitor_dependent,
+					date_created: item.date_created,
+				});
+			});
+
+			if (counter == confirmed_dependent.length - 1) {
+				// console.log(check_in_contacts_records_arr);
+				// console.log(check_in_records_arr);
+				res.send(check_in_records_arr);
+			}
+			counter += 1;
+		});
+		// if (!check_in_records) {
+		// 	return res.send(false);
+		// }
+		// res.send(check_in_records);
 	}
 });
 
@@ -1748,14 +1784,19 @@ app.post("/search_casual_contacts_visitor", async (req, res) => {
 app.post("/search_casual_contacts_dependent", async (req, res) => {
 	// console.log("hey");
 	var check_in_contacts_records_arr = new Array();
-	const confirmed_visitor = await visitorDependent.findOne({
+	var confirmed_case_id_arr = new Array();
+	const confirmed_visitor = await visitorDependent.find({
 		ic_num: req.body.ic_number,
 	});
+	confirmed_visitor.forEach(async function (item) {
+		confirmed_case_id_arr.push(item._id);
+	});
+
 	if (!confirmed_visitor) {
 		return res.send(false);
 	} else {
 		// return res.send(true);
-		var confirmed_visitor_id = confirmed_visitor._id;
+		// var confirmed_visitor_id = confirmed_visitor._id;
 		var counter = 0;
 		// console.log(req.body.check_in_timerange);
 		req.body.check_in_timerange.forEach(async function (item) {
@@ -1764,7 +1805,7 @@ app.post("/search_casual_contacts_dependent", async (req, res) => {
 				.find({
 					$and: [
 						{
-							visitor_dependent: { $ne: confirmed_visitor_id },
+							visitor_dependent: { $nin: confirmed_case_id_arr },
 							// { visitor_dependent: confirmed_visitor_id  },
 						},
 						{
